@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academy High Tech — Member Portal & Reader</title>
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/components.css">
+    <link rel="stylesheet" href="../css/pages.css">
+    <style>
+        /* Dashboard-Specific Embedded Styles */
+        :root {
+            --sidebar-width: 260px;
+            --activity-width: 300px;
+        }
+
+        .portal-container {
+            display: grid;
+            grid-template-columns: var(--sidebar-width) 1fr var(--activity-width);
+            min-height: 100vh;
+            background: var(--paper);
+        }
+
+        /* Left Sidebar Navigation */
+        .portal-sidebar {
+            background: var(--navy-deep);
+            color: #ffffff;
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            border-right: 1px solid var(--navy-soft);
+        }
+
+        .portal-logo {
+            font-family: var(--display);
+            font-size: 1.5rem;
+            color: var(--teal);
+        }
+
+        .nav-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-group-title {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--slate-light);
+            letter-spacing: 0.1em;
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-btn {
+            background: transparent;
+            border: none;
+            color: var(--slate-light);
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: var(--sans);
+            font-size: 0.95rem;
+            transition: all var(--transition-fast);
+        }
+
+        .sidebar-btn:hover,
+        .sidebar-btn.active {
+            background: var(--navy-soft);
+            color: var(--teal);
+        }
+
+        /* Main Content Engine */
+        .portal-main {
+            padding: 2.5rem;
+            overflow-y: auto;
+            max-height: 100vh;
+        }
+
+        .search-wrapper {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--slate-200);
+            background: #ffffff;
+            font-family: var(--sans);
+        }
+
+        .book-shelf-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .book-card {
+            background: #ffffff;
+            border: 1px solid var(--slate-200);
+            border-radius: 6px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: transform var(--transition-fast);
+        }
+
+        .book-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .book-cover-placeholder {
+            aspect-ratio: 3/4;
+            background: var(--navy-soft);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--slate-light);
+            font-family: var(--display);
+            text-align: center;
+            padding: 1rem;
+        }
+
+        /* Activity Feed Sidebar */
+        .portal-activity {
+            background: var(--paper-soft);
+            border-left: 1px solid var(--slate-200);
+            padding: 2rem 1.5rem;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .feed-title {
+            font-family: var(--display);
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feed-item {
+            background: #ffffff;
+            padding: 1rem;
+            border-radius: 6px;
+            border-left: 3px solid var(--teal);
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .feed-meta {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--slate);
+        }
+
+        /* Interactive Full-screen Reader View */
+        .reader-view {
+            position: fixed;
+            inset: 0;
+            background: var(--navy-deep);
+            z-index: 1000;
+            display: none;
+            /* Controlled via JS */
+            grid-template-columns: 300px 1fr;
+        }
+
+        .reader-sidebar {
+            background: #111827;
+            border-right: 1px solid #1f2937;
+            color: #f3f4f6;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .reader-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #1f2937;
+        }
+
+        .toc-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .toc-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #9ca3af;
+        }
+
+        .toc-item:hover,
+        .toc-item.active {
+            background: #1f2937;
+            color: var(--teal);
+        }
+
+        .reader-stage {
+            display: flex;
+            flex-direction: column;
+            background: #1f2937;
+            position: relative;
+        }
+
+        .reader-toolbar {
+            background: #111827;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            color: #ffffff;
+        }
+
+        .pdf-canvas-viewport {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .pdf-page-mock {
+            background: #ffffff;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 1 / 1.414;
+            /* Standard A4 Aspect Ratio */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            position: relative;
+            padding: 4rem;
+            color: #000000;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        /* Dynamic Watermarking Controls */
+        .visible-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: rgba(15, 23, 42, 0.04);
+            white-space: nowrap;
+            pointer-events: none;
+            font-family: var(--sans);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+
+        .steganographic-uid {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            font-size: 1px;
+            color: rgba(0, 0, 0, 0.01);
+            user-select: none;
+            pointer-events: none;
+        }
+
+        /* Subscriptions UI Modal Layer */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .tier-matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            max-width: 1000px;
+            width: 100%;
+            background: #ffffff;
+            padding: 2.5rem;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .tier-card {
+            border: 1px solid var(--slate-200);
+            border-radius: 6px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .tier-card.featured {
+            border-color: var(--teal);
+            box-shadow: 0 4px 20px var(--teal-glow);
+        }
+
+        /* Inline Checkout UI Integration */
+        .checkout-form-box {
+            grid-column: span 3;
+            border-top: 1px solid var(--slate-200);
+            padding-top: 2rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        @media (max-width: 1024px) {
+            .portal-container {
+                grid-template-columns: 1fr;
+            }
+
+            .portal-sidebar,
+            .portal-activity {
+                display: none;
+            }
+
+            .tier-matrix-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .checkout-form-box {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="portal-container">
+        <aside class="portal-sidebar">
+            <div class="portal-logo">academy/hub</div>
+
+            <nav class="nav-group">
+                <div class="nav-group-title">Discover</div>
+                <button class="sidebar-btn active" data-target="home">Books Dashboard</button>
+                <button class="sidebar-btn" id="trigger-sub-view">Subscription Plan</button>
+            </nav>
+
+            <nav class="nav-group">
+                <div class="nav-group-title">Account</div>
+                <button class="sidebar-btn" onclick="alert('Profile Settings Configured')">Profile &amp;
+                    Settings</button>
+            </nav>
+        </aside>
+
+        <main class="portal-main">
+            <div class="search-wrapper">
+                <input type="search" id="dashboard-search" class="search-input"
+                    placeholder="Search across catalog, documentation, and technical notes...">
+            </div>
+
+            <section id="shelf-new">
+                <h3 class="series-header">New Releases</h3>
+                <div class="book-shelf-grid" id="container-new"></div>
+            </section>
+
+            <section id="shelf-popular">
+                <h3 class="series-header">Popular Literature</h3>
+                <div class="book-shelf-grid" id="container-popular"></div>
+            </section>
+
+            <section id="shelf-history">
+                <h3 class="series-header">Most Read by You</h3>
+                <div class="book-shelf-grid" id="container-user"></div>
+            </section>
+        </main>
+
+        <aside class="portal-activity">
+            <h3 class="feed-title">System Activity</h3>
+            <div id="dynamic-activity-stream">
+            </div>
+        </aside>
+    </div>
+
+    <div class="reader-view" id="fullscreen-reader">
+        <aside class="reader-sidebar">
+            <div class="reader-header">
+                <button class="btn-primary" id="exit-reader-mode" style="padding: 0.5rem 1rem; font-size: 0.85rem;">←
+                    Exit Reader</button>
+                <h4 id="reader-book-title" style="margin-top:1rem; font-family:var(--display);">Document Canvas</h4>
+                <div style="margin-top:0.5rem; font-size:0.8rem; color:var(--slate-light);">
+                    Reading Progress: <span id="progress-percent">0%</span>
+                </div>
+                <div style="width:100%; background:#374151; height:4px; border-radius:2px; margin-top:4px;">
+                    <div id="progress-bar-fill"
+                        style="background:var(--teal); width:0%; height:100%; transition:width 0.3s;"></div>
+                </div>
+            </div>
+            <div class="toc-container" id="reader-toc">
+            </div>
+        </aside>
+
+        <main class="reader-stage">
+            <div class="reader-toolbar">
+                <div>Format: <span id="reader-format-badge" class="changelog-ver">PDF Engine</span></div>
+                <div>
+                    <button class="btn-primary" id="prev-page-btn"
+                        style="padding:0.4rem 0.8rem; font-size:0.8rem;">Prev</button>
+                    <span style="margin: 0 1rem; font-family:var(--mono);" id="page-counter-ui">Page 1</span>
+                    <button class="btn-primary" id="next-page-btn"
+                        style="padding:0.4rem 0.8rem; font-size:0.8rem;">Next</button>
+                </div>
+                <div style="font-size:0.8rem; color:var(--slate-light);" id="reader-meta-format">Multi-format Asset
+                    Active</div>
+            </div>
+
+            <div class="pdf-canvas-viewport">
+                <div class="pdf-page-mock" id="pdf-render-surface">
+                    <div class="visible-watermark" id="dynamic-watermark-text">academyhightech/member-fallback</div>
+                    <div class="steganographic-uid" id="forensic-invisible-uid"></div>
+
+                    <div id="page-content-dynamic-body">
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="subscription-modal">
+        <div class="tier-matrix-grid">
+            <button id="close-sub-modal"
+                style="position:absolute; top:1rem; right:1rem; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+
+            <div class="tier-card" data-tier="standard">
+                <h4 style="font-family:var(--display); font-size:1.25rem;">Standard tier</h4>
+                <div style="font-family:var(--mono); font-size:1.5rem; font-weight:bold; color:var(--navy);">$9<span
+                        style="font-size:0.8rem; font-weight:normal;">/mo</span></div>
+                <p style="font-size:0.85rem; color:var(--slate);">Access standard curated tech books architecture notes.
+                </p>
+                <button class="btn-primary select-tier-btn" style="width:100%; justify-content:center;">Choose
+                    Standard</button>
+            </div>
+
+            <div class="tier-card featured" data-tier="gold">
+                <h4 style="font-family:var(--display); font-size:1.25rem;">Gold Tier</h4>
+                <div style="font-family:var(--mono); font-size:1.5rem; font-weight:bold; color:var(--navy);">$19<span
+                        style="font-size:0.8rem; font-weight:normal;">/mo</span></div>
+                <p style="font-size:0.85rem; color:var(--slate);">Full access across the entire development series and
+                    active pipelines.</p>
+                <button class="btn-primary select-tier-btn"
+                    style="width:100%; justify-content:center; background:var(--teal); border-color:var(--teal);">Choose
+                    Gold</button>
+            </div>
+
+            <div class="tier-card" data-tier="premium">
+                <h4 style="font-family:var(--display); font-size:1.25rem;">Premium Tier</h4>
+                <div style="font-family:var(--mono); font-size:1.5rem; font-weight:bold; color:var(--navy);">$29<span
+                        style="font-size:0.8rem; font-weight:normal;">/mo</span></div>
+                <p style="font-size:0.85rem; color:var(--slate);">Includes live version patches, source asset
+                    repositories, and alpha books.</p>
+                <button class="btn-primary select-tier-btn" style="width:100%; justify-content:center;">Choose
+                    Premium</button>
+            </div>
+
+            <div class="checkout-form-box" id="checkout-gateway-rack">
+                <h4 style="font-family:var(--display); margin-bottom:1rem;">Secure Checkout Infrastructure via Global
+                    Gateway</h4>
+                <form id="mock-payment-form" style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
+                    <div class="form-group" style="grid-column: span 3;">
+                        <label style="font-size:0.8rem; font-family:var(--mono);">Card Information</label>
+                        <input type="text" class="form-control" placeholder="4242 •••• •••• 4242" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="MM / YY" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="CVC" required>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn-primary" id="submit-payment-btn"
+                            style="width:100%; height:100%; justify-content:center;">Process Authorization</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/dashboard.js"></script>
+</body>
+
+</html>

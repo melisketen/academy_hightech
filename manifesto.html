@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Manifesto — Academy High Tech</title>
+  <meta name="description" content="Why technical publishing is broken, and how we are fixing it with version-controlled books built like software.">
+  <meta name="theme-color" content="#0F172A">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/pages.css">
+  
+  <script src="../js/config.js"></script>
+  <script src="../js/app.js" defer></script>
+</head>
+<body>
+
+<!-- Using relative paths for subfolders support (if needed, keeping consistent structure) -->
+<nav class="nav" id="nav">
+  <a href="index.html" class="logo" aria-label="Academy High Tech">
+    <span>academy<span class="slash">/</span>hightech</span>
+    <span class="logo-line"></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="manifesto.html" class="active">Manifesto</a></li>
+    <li><a href="index.html#series">Series</a></li>
+    <li><a href="books/git-for-teams.html">First title</a></li>
+    <li><a href="author.html">Author</a></li>
+    <li><a href="https://academyhightech.com.tr" class="lang-switch">TR ↗</a></li>
+  </ul>
+</nav>
+
+<main class="container" style="padding-top: 8rem; max-width: 800px; padding-bottom: 5rem;">
+  <article class="reveal in">
+    <span class="section-label">Philosophical Commitments</span>
+    <h1 style="font-family: var(--display); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 400; line-height: 1.1; margin-bottom: 2rem;">
+      The Version-Controlled <br><em>Book Manifesto.</em>
+    </h1>
+    
+    <div class="manifesto-body" style="font-size: 1.125rem;">
+      <p style="font-size: 1.3rem; color: var(--navy); line-height: 1.6; margin-bottom: 2.5rem;">
+        We believe that technical books should be treated with the same engineering rigor as the code bases they seek to teach.
+      </p>
+
+      <p>
+        In traditional publishing, a book is treated as an event. The author finishes typing, the manuscript is sent to a printing press, ink is applied to tree fibers, and the text becomes static. 
+      </p>
+      
+      <p>
+        This works well for literature, history, and philosophy, where the subject matter matures over decades or centuries. But for technical software engineering, it is a disaster.
+      </p>
+
+      <div class="alert alert-important">
+        <div class="alert-title">The Law of Documentation Rot</div>
+        A printed book about a rapidly developing software ecosystem starts decaying the very second the release tag is generated. Within six months, minor versions deprecate flags. Within two years, major framework iterations make half the code blocks fail compiler flags.
+      </div>
+
+      <h3 style="font-family: var(--display); font-size: 1.8rem; font-weight: 500; margin: 3rem 0 1rem; color: var(--navy);">
+        Our Three Rules of Publishing
+      </h3>
+      
+      <p>
+        To combat this decay, Academy High Tech adheres to a strict set of principles that align book publishing with modern software distribution:
+      </p>
+      
+      <h4 style="font-family: var(--sans); font-size: 1.15rem; font-weight: 600; margin-top: 2rem; color: var(--navy);">
+        1. Compilable Code Segments
+      </h4>
+      <p>
+        Every single code listing shown in our books must compile. We do not write code snippets directly in rich text editors. Code is pulled directly from working repositories, run through compilation validators, and integrated into final layout scripts by compiler gates. If an example breaks, the book build fails.
+      </p>
+
+      <h4 style="font-family: var(--sans); font-size: 1.15rem; font-weight: 600; margin-top: 2rem; color: var(--navy);">
+        2. Semantic Versioning (SemVer)
+      </h4>
+      <p>
+        Our books carry version identifiers. 
+        <ul>
+          <li style="margin-bottom: 0.5rem; margin-top: 0.5rem;"><strong>Patch updates (v1.0.x)</strong> cover typos, simple clarifications, or package upgrades with no layout shifts.</li>
+          <li style="margin-bottom: 0.5rem;"><strong>Minor versions (v1.x.0)</strong> add new chapters, rewrite examples for syntax updates, or expand sections to align with new system API features.</li>
+          <li style="margin-bottom: 0.5rem;"><strong>Major versions (vX.0.0)</strong> represent complete structural rewrites corresponding to framework paradigm shifts.</li>
+        </ul>
+      </p>
+
+      <h4 style="font-family: var(--sans); font-size: 1.15rem; font-weight: 600; margin-top: 2rem; color: var(--navy);">
+        3. Open Companion Repositories
+      </h4>
+      <p>
+        Every reader is a compiler. Readers can open issues for technical errors on our companion GitHub repositories or send pull requests. Corrections are reviewed, checked against compiler tools, and compiled into the next tagged release. Updates are distributed free for existing ebook readers.
+      </p>
+    </div>
+
+    <!-- Comparative Lifecycle Section -->
+    <div class="manifesto-lifecycle">
+      <h3 style="font-family: var(--display); font-size: 1.6rem; font-weight: 500; margin-bottom: 1.5rem; text-align: center; color: var(--navy);">
+        The Technical Book Lifecycle
+      </h3>
+      <div class="lifecycle-grid">
+        <div class="lifecycle-col rot">
+          <h4>Traditional Publishing</h4>
+          <ul class="lifecycle-steps">
+            <li><strong>Step 1:</strong> Author writes book drafts in 2025.</li>
+            <li><strong>Step 2:</strong> Editor publishes final copy in early 2026.</li>
+            <li><strong>Step 3:</strong> Framework core team deprecates APIs in March 2026.</li>
+            <li><strong>Step 4:</strong> Code snippets fail in reader environments.</li>
+            <li><strong>Step 5:</strong> Errata list grows, but print run remains static.</li>
+            <li><strong>Step 6:</strong> Book goes obsolete; publisher requests a new book from scratch in 2028.</li>
+          </ul>
+        </div>
+        <div class="lifecycle-col live">
+          <h4>Academy High Tech System</h4>
+          <ul class="lifecycle-steps">
+            <li><strong>Step 1:</strong> Author commits Markdown drafts & test code in 2025.</li>
+            <li><strong>Step 2:</strong> bookMaker compiles tagged stable release v1.0.0.</li>
+            <li><strong>Step 3:</strong> API change breaks code segment on page 74.</li>
+            <li><strong>Step 4:</strong> Reader files issue on GitHub; code is patched.</li>
+            <li><strong>Step 5:</strong> bookMaker triggers rebuild & tag release v1.0.1.</li>
+            <li><strong>Step 6:</strong> Updated PDF/EPUB distributions pushed; existing readers receive update alerts.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <div style="margin-top: 4rem; text-align: center;">
+      <a href="books/git-for-teams.html" class="btn-primary">
+        See v1.0.1 Release Details
+        <span class="arrow">→</span>
+      </a>
+    </div>
+  </article>
+</main>
+
+<footer class="container">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="index.html" class="logo">
+        <span>academy<span class="slash">/</span>hightech</span>
+        <span class="logo-line"></span>
+      </a>
+      <p style="margin-top: 1rem;">An independent imprint by Prof. Dr. İsmail KIRBAŞ. Technical books, built like software.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Books</h4>
+      <ul>
+        <li><a href="books/git-for-teams.html">Git for Teams</a></li>
+        <li><a href="index.html#series">Developer Series</a></li>
+        <li><a href="index.html#series">Academic Series</a></li>
+        <li><a href="index.html#series">AI &amp; Data Series</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Imprint</h4>
+      <ul>
+        <li><a href="manifesto.html">Manifesto</a></li>
+        <li><a href="author.html">The Author</a></li>
+        <li><a href="https://github.com/bmdersleri/bookMaker" target="_blank" rel="noopener">bookMaker (OSS)</a></li>
+        <li><a href="mailto:info@academyhightech.com">Contact</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Elsewhere</h4>
+      <ul>
+        <li><a href="https://academyhightech.com.tr" target="_blank" rel="noopener">Türkçe (.com.tr)</a></li>
+        <li><a href="https://kirbas.com" target="_blank" rel="noopener">kirbas.com</a></li>
+        <li><a href="https://github.com/academyhightech" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://linkedin.com" target="_blank" rel="noopener">LinkedIn</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>© 2026 Academy High Tech · All rights reserved</div>
+    <div>Built with <a href="https://github.com/bmdersleri/bookMaker" target="_blank" rel="noopener">bookMaker</a> · MIT licensed pipeline</div>
+  </div>
+</footer>
+
+<script>
+  // Simple path rewrite helper in case relative imports are tricky
+  document.addEventListener('DOMContentLoaded', () => {
+    // If we are served from root or deep, correct subpaths
+    const rootPath = window.location.pathname.includes('/books/') || window.location.pathname.includes('/series/') ? '../' : '';
+    // Since we put manifesto in root directory directly (manifesto.html), we just link variables relative to root
+  });
+</script>
+</body>
+</html>

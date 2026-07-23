@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Git for Teams - Academy High Tech</title>
+  <meta name="description" content="Professional version control workflows with GitHub. Technical book by Prof. Dr. İsmail KIRBAŞ.">
+  <meta name="theme-color" content="#0F172A">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/pages.css">
+  
+  <script src="../js/config.js"></script>
+  <script src="../js/app.js" defer></script>
+  <script src="../js/errata.js" defer></script>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <a href="../index.html" class="logo" aria-label="Academy High Tech">
+    <span>academy<span class="slash">/</span>hightech</span>
+    <span class="logo-line"></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="../manifesto.html">Manifesto</a></li>
+    <li><a href="../index.html#series">Series</a></li>
+    <li><a href="git-for-teams.html" class="active">First title</a></li>
+    <li><a href="../author.html">Author</a></li>
+    <li><a href="https://academyhightech.com.tr" class="lang-switch">TR ↗</a></li>
+  </ul>
+</nav>
+
+<main class="container" style="padding-top: 8rem; padding-bottom: 5rem;">
+  <header style="margin-bottom: 3rem;" class="reveal in">
+    <div style="font-family: var(--mono); font-size: 0.78rem; color: var(--teal-deep); font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem;">
+      Developer Series &middot; Imprint No. 01
+    </div>
+    <h1 style="font-family: var(--display); font-size: clamp(2.5rem, 5vw, 4.25rem); font-weight: 400; line-height: 1.05; color: var(--navy);">
+      Git for <em>Teams.</em>
+    </h1>
+    <p style="font-size: 1.25rem; color: var(--slate); max-width: 42rem; margin-top: 1rem; line-height: 1.5;">
+      Professional version control workflows with GitHub. Configured for engineers shipping real-world projects.
+    </p>
+  </header>
+
+  <div class="book-detail-grid">
+    <!-- Sticky specs sidebar -->
+    <aside class="book-specs-sticky reveal in">
+      <div class="book-cover-container">
+        <!-- Reusing generated image asset -->
+        <div class="book-cover" style="background-image: url('../assets/cover-git-for-teams.png');"></div>
+      </div>
+      
+      <ul class="featured-specs" style="margin-bottom: 1.5rem;">
+        <li><span>Version</span><span>v1.0.1 (Stable)</span></li>
+        <li><span>Released</span><span>July 2026</span></li>
+        <li><span>Repository</span><a href="https://github.com/academyhightech/git-for-teams" target="_blank" rel="noopener">git-for-teams ↗</a></li>
+        <li><span>Formats</span><span>PDF, EPUB, Web</span></li>
+        <li><span>License</span><span>CC BY-NC-ND 4.0</span></li>
+      </ul>
+
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;" id="action-buttons-container">
+        <!-- Populated dynamically by script based on authentication -->
+      </div>
+    </aside>
+
+    <!-- Main Content Details -->
+    <article class="reveal in" style="display: flex; flex-direction: column; gap: 3.5rem;">
+      <section id="about">
+        <h3 style="font-family: var(--display); font-size: 1.8rem; font-weight: 500; margin-bottom: 1.25rem;">About the Book</h3>
+        <div class="manifesto-body">
+          <p>
+            Most developers learn Git commands by heart: <code>git add</code>, <code>git commit</code>, <code>git push</code>. But when collaborative pressure builds, merge conflicts break CI steps, and complex branching trees clog pull request queues, individual scripts break down.
+          </p>
+          <p>
+            <strong>Git for Teams</strong> bridges the gap between individual commands and corporate team coordination. It teaches branching configurations that scale, review workflows that lead to cleaner implementations, and deployment gates that run automatically.
+          </p>
+          <p>
+            Built using the <strong>bookMaker</strong> pipeline, all markdown examples, shell configs, and YAML settings have been validated on local repositories to guarantee compiler correctness.
+          </p>
+        </div>
+      </section>
+
+      <!-- Chapter Accordion -->
+      <section id="syllabus">
+        <h3 style="font-family: var(--display); font-size: 1.8rem; font-weight: 500; margin-bottom: 1.5rem;">Chapters &amp; Structure</h3>
+        <div class="accordion" id="chapters-accordion">
+          
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              <span class="accordion-title">Chapter 1: The Local Flow</span>
+              <span class="accordion-icon">▼</span>
+            </div>
+            <div class="accordion-content">
+              <div class="accordion-content-inner">
+                <p style="margin-bottom: 1rem;">Mastering local version tracking before collaborating. Building clean commits, navigating file restore buffers, and parsing logs.</p>
+                <ul>
+                  <li>Configuring global signature keys &amp; editor environments</li>
+                  <li>Deep dive: Staging areas vs working directory states</li>
+                  <li>Discarding revisions: <code>git restore</code> vs <code>git reset</code></li>
+                  <li>Crafting clean commits: Interactive staging &amp; commit guidelines</li>
+                  <li>Searching logs with exact filters, search queries, and custom formats</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              <span class="accordion-title">Chapter 2: Collaborative Branching Models</span>
+              <span class="accordion-icon">▼</span>
+            </div>
+            <div class="accordion-content">
+              <div class="accordion-content-inner">
+                <p style="margin-bottom: 1rem;">Coordination paradigms that scale across teams without bottlenecking development speeds.</p>
+                <ul>
+                  <li>Main branch protection rules and configuration models</li>
+                  <li>Trunk-based development vs. GitFlow configurations</li>
+                  <li>Setting up temporary release branches vs. hotfix branches</li>
+                  <li>Managing submodules and monorepo configurations</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              <span class="accordion-title">Chapter 3: Pull Requests as Pedagogical Tools</span>
+              <span class="accordion-icon">▼</span>
+            </div>
+            <div class="accordion-content">
+              <div class="accordion-content-inner">
+                <p style="margin-bottom: 1rem;">Transforming pull request code reviews from stressful bottlenecks into collaborative learning channels.</p>
+                <ul>
+                  <li>Writing high-quality PR descriptions and templates</li>
+                  <li>Effective review comments, code suggestions, and approvals</li>
+                  <li>Resolving PR debates constructively with clear policy guides</li>
+                  <li>Automation: Auto-assigning reviewers and status checks</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              <span class="accordion-title">Chapter 4: Rebase, Squash, &amp; Conflict Resolutions</span>
+              <span class="accordion-icon">▼</span>
+            </div>
+            <div class="accordion-content">
+              <div class="accordion-content-inner">
+                <p style="margin-bottom: 1rem;">Resolving branch differences cleanly while preserving valuable git history structures.</p>
+                <ul>
+                  <li>The rebase philosophy vs standard branch mergers</li>
+                  <li>Cleaning histories with interactive rebase squashing (<code>git rebase -i</code>)</li>
+                  <li>Resolving merge conflicts safely: Three-way merge tools</li>
+                  <li>Avoiding repetitive conflict resolutions with <code>git config rerere</code></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              <span class="accordion-title">Chapter 5: Continuous Integration &amp; Deployment Hooks</span>
+              <span class="accordion-icon">▼</span>
+            </div>
+            <div class="accordion-content">
+              <div class="accordion-content-inner">
+                <p style="margin-bottom: 1rem;">Automating quality gates to verify changes before they deploy to target servers.</p>
+                <ul>
+                  <li>Setting up client-side pre-commit hooks for syntax checks</li>
+                  <li>Constructing GitHub Actions validation workflows</li>
+                  <li>Automating version bumps and changelog releases</li>
+                  <li>Deploying static assets to production buckets securely</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Errata Board (Dynamically powered by errata.js) -->
+      <section id="errata" class="errata-board">
+        <div class="errata-board-header">
+          <div>
+            <h3 style="font-family: var(--display); font-size: 1.6rem; font-weight: 500; margin: 0;">Errata Log &amp; Issues</h3>
+            <p style="font-size: 0.85rem; color: var(--slate); margin-top: 0.25rem;">Live tracking database of reported text changes and code patches.</p>
+          </div>
+        </div>
+
+        <!-- Filter tabs -->
+        <div class="tabs-nav">
+          <button class="tab-btn active" data-filter="all">All Logs</button>
+          <button class="tab-btn" data-filter="open">Open (1)</button>
+          <button class="tab-btn" data-filter="fixed">Fixed (2)</button>
+          <button class="tab-btn" data-filter="proposed">Proposed</button>
+        </div>
+
+        <!-- Target Container -->
+        <div class="errata-list" id="errata-list">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Report Errata Form -->
+        <div class="errata-form-container">
+          <h4 style="font-family: var(--sans); font-size: 1rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--navy);">
+            Report an Errata / Suggest Patch
+          </h4>
+          <form class="errata-form" id="errata-report-form" novalidate>
+            <div class="form-group">
+              <label for="errata-reporter">Reporter Name</label>
+              <input type="text" id="errata-reporter" class="form-control" placeholder="Lucas Vance" required>
+            </div>
+            <div class="form-group">
+              <label for="errata-email">Email Address</label>
+              <input type="email" id="errata-email" class="form-control" placeholder="you@somewhere.dev" required>
+            </div>
+            <div class="form-group">
+              <label for="errata-page">Page Number (1 - 250)</label>
+              <input type="number" id="errata-page" class="form-control" placeholder="42" min="1" max="250" required>
+            </div>
+            <div class="form-group" style="visibility: hidden; position: absolute; height: 0;">
+              <!-- Empty spacer to balance layout grid -->
+            </div>
+            <div class="form-group errata-form-full">
+              <label for="errata-desc-input">Description of Errata / Proposed Correction</label>
+              <textarea id="errata-desc-input" rows="4" class="form-control" placeholder="Typo in paragraph 3, reads 'checkut' instead of 'checkout'..." required></textarea>
+            </div>
+            <div class="errata-form-full">
+              <button type="submit" class="btn-primary" style="margin-top: 0.5rem;">
+                Submit Errata to Build Pipeline
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Git timeline changelog -->
+      <section id="changelog">
+        <h3 style="font-family: var(--display); font-size: 1.8rem; font-weight: 500; margin-bottom: 1rem;">Release Changelog</h3>
+        <p style="font-size: 0.95rem; color: var(--slate);">The history of this edition, tracked using semantic versioning rules.</p>
+        
+        <div class="git-changelog">
+          <div class="changelog-item">
+            <span class="changelog-commit-dot"></span>
+            <div class="changelog-header">
+              <span class="changelog-ver">v1.0.1</span>
+              <span class="changelog-date">2026-07-06</span>
+              <span class="changelog-commit-hash">commit: 8f7e2da</span>
+            </div>
+            <h4 class="changelog-title">Typo fixes and pipeline corrections</h4>
+            <div class="changelog-body">
+              <p>Re-compiled PDF and EPUB layouts to merge verified errata:</p>
+              <ul>
+                <li>Corrected spelling error on page 42 header block.</li>
+                <li>Fixed missing credential permissions block in chapter 5 GitHub Actions configuration (page 112).</li>
+                <li>Updated markdown templates to enforce link target validation gates.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="changelog-item">
+            <span class="changelog-commit-dot"></span>
+            <div class="changelog-header">
+              <span class="changelog-ver">v1.0.0</span>
+              <span class="changelog-date">2026-06-01</span>
+              <span class="changelog-commit-hash">commit: a1c94b2</span>
+            </div>
+            <h4 class="changelog-title">First stable release</h4>
+            <div class="changelog-body">
+              <p>Initial publication of the full textbook structure. Includes chapters 1 through 5, companion repositories configurations, and complete test cases verification logs.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </article>
+  </div>
+</main>
+
+<footer class="container">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="../index.html" class="logo">
+        <span>academy<span class="slash">/</span>hightech</span>
+        <span class="logo-line"></span>
+      </a>
+      <p style="margin-top: 1rem;">An independent imprint by Prof. Dr. İsmail KIRBAŞ. Technical books, built like software.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Books</h4>
+      <ul>
+        <li><a href="git-for-teams.html">Git for Teams</a></li>
+        <li><a href="../index.html#series">Developer Series</a></li>
+        <li><a href="../index.html#series">Academic Series</a></li>
+        <li><a href="../index.html#series">AI &amp; Data Series</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Imprint</h4>
+      <ul>
+        <li><a href="../manifesto.html">Manifesto</a></li>
+        <li><a href="../author.html">The Author</a></li>
+        <li><a href="https://github.com/bmdersleri/bookMaker" target="_blank" rel="noopener">bookMaker (OSS)</a></li>
+        <li><a href="mailto:info@academyhightech.com">Contact</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Elsewhere</h4>
+      <ul>
+        <li><a href="https://academyhightech.com.tr" target="_blank" rel="noopener">Türkçe (.com.tr)</a></li>
+        <li><a href="https://kirbas.com" target="_blank" rel="noopener">kirbas.com</a></li>
+        <li><a href="https://github.com/academyhightech" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://linkedin.com" target="_blank" rel="noopener">LinkedIn</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>&copy; 2026 Academy High Tech &middot; All rights reserved</div>
+    <div>Built with <a href="https://github.com/bmdersleri/bookMaker" target="_blank" rel="noopener">bookMaker</a> &middot; MIT licensed pipeline</div>
+  </div>
+</footer>
+
+<script>
+  const API = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'http://localhost/api/public/api';
+
+  // -- Book metadata --
+  const BOOK_ID        = 1;
+  const BOOK_PUBLISHED = true;   // false = pre-release / coming soon
+  const BOOK_SERIES_ID = 1;      // category_id from DB - Developer Series
+
+  // Simple Accordion Handler
+  function toggleAccordion(header) {
+    const item = header.parentElement;
+    const isActive = item.classList.contains('active');
+
+    // Close other items
+    document.querySelectorAll('.accordion-item').forEach(i => {
+      i.classList.remove('active');
+      i.querySelector('.accordion-content').style.maxHeight = null;
+    });
+
+    if (!isActive) {
+      item.classList.add('active');
+      const content = item.querySelector('.accordion-content');
+      content.style.maxHeight = content.scrollHeight + "px";
+    }
+  }
+
+  // Pre-expand first accordion item on load
+  document.addEventListener('DOMContentLoaded', () => {
+    const firstHeader = document.querySelector('.accordion-header');
+    if (firstHeader) toggleAccordion(firstHeader);
+
+    renderActionButtons();
+  });
+
+  // -- Contextual button renderer --
+  function renderActionButtons() {
+    const container = document.getElementById('action-buttons-container');
+    if (!container) return;
+
+    const token   = localStorage.getItem('auth_token');
+    const userJson = localStorage.getItem('user');
+    const user    = userJson ? JSON.parse(userJson) : null;
+    const tier    = user ? (user.subscription_status || 'free') : null;
+
+    const btnPrimary = `style="justify-content: center; width: 100%; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; padding: 0.85rem; border-radius: 6px; font-weight: 600; font-size: 0.95rem; transition: all 0.2s;"`;
+    const btnSecondary = `style="text-align: center; border: 1px solid rgba(255,255,255,0.15); padding: 0.8rem; border-radius: 6px; display: flex; justify-content: center; align-items: center; gap: 0.5rem; background: transparent; color: var(--slate-light); font-weight: 500; cursor: pointer; width: 100%; font-size: 0.9rem; transition: all 0.2s;"`;
+
+    let html = '';
+
+    if (!BOOK_PUBLISHED) {
+      // -- Pre-release buttons --
+      html = `
+        <button onclick="notifyOnRelease(${BOOK_ID})" class="btn-primary" id="btn-notify-release" ${btnPrimary} style="background: var(--teal-deep); color: white; justify-content: center; width: 100%; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; padding: 0.85rem; border-radius: 6px; font-weight: 600; font-size: 0.95rem;">
+          🔔 Notify on Release
+        </button>
+        <button onclick="requestInstructorCopy(${BOOK_ID})" ${btnSecondary} id="btn-instructor-copy">
+          📋 Request Instructor Copy
+        </button>
+      `;
+    } else if (!token || !user) {
+      // -- Not logged in --
+      html = `
+        <a href="../auth.html?redirect=${encodeURIComponent(window.location.pathname)}" class="btn-primary" style="justify-content: center; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; padding: 0.85rem; border-radius: 6px; background: var(--teal-deep); color: white; font-weight: 600;">
+          Sign In to Read
+        </a>
+        <a href="../subscription.html" ${btnSecondary} style="text-decoration: none; text-align: center; border: 1px solid rgba(255,255,255,0.15); padding: 0.8rem; border-radius: 6px; display: flex; justify-content: center; color: var(--slate-light);">
+          View Plans & Pricing
+        </a>
+      `;
+    } else if (tier === 'free') {
+      // -- Free user: published book --
+      html = `
+        <a href="../subscription.html" class="btn-primary" style="justify-content: center; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; padding: 0.85rem; border-radius: 6px; background: var(--teal-deep); color: white; font-weight: 600;">
+          Subscribe to Read - From $9.99/mo
+        </a>
+        <div style="font-size: 0.78rem; font-family: var(--mono); color: var(--slate); text-align: center; margin-top: 0.25rem;">Standard includes online PDF reader &middot; Premium includes downloads</div>
+      `;
+    } else if (tier === 'standard') {
+      // -- Standard: PDF reader only --
+      html = `
+        <button onclick="window.readBook(${BOOK_ID})" class="btn-primary" id="btn-read-online" style="background: var(--teal-deep); color: white; justify-content: center; width: 100%; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; padding: 0.85rem; border-radius: 6px; font-weight: 600; font-size: 0.95rem;">
+          📖 Online PDF Reader
+        </button>
+        <a href="../subscription.html" ${btnSecondary} style="text-decoration: none; text-align: center; border: 1px solid rgba(255,255,255,0.15); padding: 0.8rem; border-radius: 6px; display: flex; justify-content: center; color: var(--slate-light);">
+          Upgrade to Premium for Downloads
+        </a>
+      `;
+    } else if (tier === 'premium') {
+      // -- Premium: reader + download --
+      html = `
+        <button onclick="window.readBook(${BOOK_ID})" class="btn-primary" id="btn-read-online" style="background: var(--teal-deep); color: white; justify-content: center; width: 100%; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; padding: 0.85rem; border-radius: 6px; font-weight: 600; font-size: 0.95rem;">
+          📖 Online PDF Reader
+        </button>
+        <button onclick="downloadPDF(${BOOK_ID})" id="btn-download-pdf" ${btnSecondary}>
+          ⬇ Download PDF
+        </button>
+      `;
+    }
+
+    if (token && user) {
+      html += `<div class="shelf-tracker-wrap" data-book-id="${BOOK_ID}" style="margin-top: 0.5rem; width: 100%;"></div>`;
+    }
+
+    container.innerHTML = html;
+    if (window.initializeShelfTrackers) {
+      window.initializeShelfTrackers();
+    }
+  }
+
+  // -- Action handlers --
+
+  async function notifyOnRelease(bookId) {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      window.location.href = '../auth.html?redirect=' + encodeURIComponent(window.location.pathname);
+      return;
+    }
+    const btn = document.getElementById('btn-notify-release');
+    if (btn) { btn.disabled = true; btn.textContent = 'Registering...'; }
+
+    try {
+      const res = await fetch(`${API}/books/${bookId}/notify`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json', 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (btn) { btn.textContent = '✓ ' + (data.message || 'You\'re on the list!'); }
+    } catch (err) {
+      if (btn) { btn.disabled = false; btn.textContent = 'ğŸ”” Notify on Release'; }
+    }
+  }
+
+  async function requestInstructorCopy(bookId) {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      window.location.href = '../auth.html?redirect=' + encodeURIComponent(window.location.pathname);
+      return;
+    }
+    const email = (JSON.parse(localStorage.getItem('user') || '{}').email) || '';
+    const subject = encodeURIComponent('Instructor Copy Request - Book #' + bookId);
+    const body = encodeURIComponent(`Hello,\n\nI am requesting an instructor copy for Book ID ${bookId}.\n\nAccount email: ${email}`);
+    window.open(`mailto:info@academyhightech.com?subject=${subject}&body=${body}`, '_blank');
+  }
+
+  async function downloadPDF(bookId) {
+    const token = localStorage.getItem('auth_token');
+    if (!token) { window.location.href = '../auth.html'; return; }
+    const btn = document.getElementById('btn-download-pdf');
+    if (btn) { btn.disabled = true; btn.textContent = 'Preparing download...'; }
+
+    try {
+      const res = await fetch(`${API}/books/${bookId}/stream`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Download failed - ' + res.status);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'git-for-teams.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Download error: ' + err.message);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '⬇ Download PDF'; }
+    }
+  }
+</script>
+
+</body>
+</html>

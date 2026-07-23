@@ -1,0 +1,47 @@
+:root {
+  /* Color Palette */
+  --navy: #0F172A;
+  --navy-soft: #1E293B;
+  --navy-deep: #0B0F19;
+  --teal: #14B8A6;
+  --teal-deep: #0D9488;
+  --teal-glow: rgba(20, 184, 166, 0.15);
+  --paper: #F8FAFC;
+  --paper-soft: #F1F5F9;
+  --slate: #64748B;
+  --slate-light: #94A3B8;
+  --slate-200: #E2E8F0;
+  --slate-300: #CBD5E1;
+  --slate-50: #F1F5F9;
+  
+  /* Status Colors */
+  --color-success: #10B981;
+  --color-success-bg: #E6F4EA;
+  --color-error: #EF4444;
+  --color-error-bg: #FEE2E2;
+  --color-warning: #F59E0B;
+  --color-warning-bg: #FEF3C7;
+  
+  /* Typography */
+  --display: 'Fraunces', Georgia, serif;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  
+  /* Layout */
+  --max-width: 1280px;
+  --gutter: clamp(1.25rem, 4vw, 3.5rem);
+  --header-height: 70px;
+  
+  /* Shadows & Aesthetics */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-premium: 0 30px 60px -30px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  --border-radius: 6px;
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
