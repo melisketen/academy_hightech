@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
             $table->json('profile_info')->nullable();
-            $table->string('subscription_status')->default('free');
+            $table->string('subscription_status')->default('standard');
             $table->timestamps();
         });
 

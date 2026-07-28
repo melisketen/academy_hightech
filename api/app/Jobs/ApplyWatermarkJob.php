@@ -17,6 +17,7 @@ class ApplyWatermarkJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected User $user;
+
     protected Book $book;
 
     public function __construct(User $user, Book $book)
@@ -27,28 +28,29 @@ class ApplyWatermarkJob implements ShouldQueue
 
     public function handle(PdfWatermarkService $watermarkService): void
     {
-        $originalPath = storage_path('app/private/' . $this->book->file_path);
-        
-        if (!file_exists($originalPath)) {
+        $originalPath = storage_path('app/private/'.$this->book->file_path);
+
+        if (! file_exists($originalPath)) {
             \Log::error("ApplyWatermarkJob: Original book file not found at {$originalPath}");
+
             return;
         }
 
         try {
             $watermarkedContent = $watermarkService->watermark($originalPath, $this->user->email);
-            
+
             // Secure cache directory
             $cacheDir = 'private/watermarked_cache';
-            if (!Storage::exists($cacheDir)) {
+            if (! Storage::exists($cacheDir)) {
                 Storage::makeDirectory($cacheDir);
             }
 
             $cachePath = "{$cacheDir}/{$this->user->id}_{$this->book->id}.pdf";
             Storage::put($cachePath, $watermarkedContent);
-            
+
             \Log::info("ApplyWatermarkJob: Watermarked PDF cached at {$cachePath} for User ID: {$this->user->id}");
         } catch (\Exception $e) {
-            \Log::error("ApplyWatermarkJob failed: " . $e->getMessage());
+            \Log::error('ApplyWatermarkJob failed: '.$e->getMessage());
         }
     }
 }

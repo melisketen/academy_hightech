@@ -16,6 +16,10 @@
   <link rel="stylesheet" href="css/pages.css">
   
   <script src="js/config.js"></script>
+  <script src="js/apiClient.js"></script>
+  <script src="js/utils/navigation.js"></script>
+  <script src="js/utils/scroll.js"></script>
+  <script src="js/components/bookCard.js"></script>
   <script src="js/app.js" defer></script>
   <style>
     body {
@@ -224,7 +228,12 @@
     <div class="plan-info">
       <h2>Active Subscription Details</h2>
       <p style="margin-bottom: 1rem;">Welcome back! You have active access details below.</p>
-      <div class="plan-badge" id="current-plan-badge">FREE</div>
+       <div class="plan-badge" id="current-plan-badge">STANDARD</div>
+       <div id="upgrade-btn-wrap" style="margin-top: 0.75rem; display: none;">
+         <button id="btn-upgrade-plan" onclick="upgradeToPremium()" style="background: var(--teal); color: white; border: none; padding: 0.45rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: background 0.2s;">
+           ⚡ Upgrade to Premium
+         </button>
+       </div>
     </div>
     <div class="user-details" style="text-align: right;">
       <div style="font-weight: 600; color: var(--navy);" id="user-email">email@something.dev</div>
@@ -349,13 +358,15 @@
     const user = JSON.parse(localStorage.getItem('user'));
     if (user) {
       document.getElementById('user-email').textContent = user.email;
-      document.getElementById('current-plan-badge').textContent = (user.subscription_status || 'free').toUpperCase();
+      const status = user.subscription_status || 'standard';
+      document.getElementById('current-plan-badge').textContent = status.toUpperCase();
       document.getElementById('user-joined').textContent = 'Joined: ' + new Date(user.created_at).toLocaleDateString();
 
-      const status = user.subscription_status || 'free';
-
-      // Show cancel button for paid plans
-      if (status !== 'free') {
+      // Show cancel button and upgrade button for standard plan
+      if (status === 'standard' || status === 'free') {
+        document.getElementById('upgrade-btn-wrap').style.display = 'block';
+      }
+      if (status !== 'free' && status !== 'standard') {
         document.getElementById('cancel-sub-wrap').style.display = 'block';
       }
 
@@ -556,6 +567,32 @@
       if (msg) { msg.style.color = '#ef4444'; msg.textContent = 'Error: ' + err.message; }
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = 'Save Series'; }
+    }
+  };
+
+  // ── Upgrade to Premium ────────────────────────────────────────────────────
+  window.upgradeToPremium = async function() {
+    if (!confirm('Are you sure you want to upgrade to the Premium Plan?')) return;
+    const btn = document.getElementById('btn-upgrade-plan');
+    if (btn) { btn.disabled = true; btn.textContent = 'Upgrading…'; }
+
+    try {
+      const res = await window.apiClient.post('/subscriptions/upgrade');
+      
+      // Update local user object
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      user.subscription_status = 'premium';
+      localStorage.setItem('user', JSON.stringify(user));
+
+      if (window.apiClient && window.apiClient.showToast) {
+        window.apiClient.showToast(res.message || 'Successfully upgraded to Premium!', 'success');
+      } else {
+        alert(res.message || 'Successfully upgraded to Premium!');
+      }
+
+      setTimeout(() => window.location.reload(), 1200);
+    } catch (err) {
+      if (btn) { btn.disabled = false; btn.textContent = '⚡ Upgrade to Premium'; }
     }
   };
 </script>

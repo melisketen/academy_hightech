@@ -7,7 +7,6 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -31,10 +30,10 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'password'       => 'hashed',
-            'profile_info'   => 'array',
+            'password' => 'hashed',
+            'profile_info' => 'array',
             'is_deactivated' => 'boolean',
-            'is_admin'       => 'boolean',
+            'is_admin' => 'boolean',
         ];
     }
 
@@ -57,8 +56,8 @@ class User extends Authenticatable
     public function books()
     {
         return $this->belongsToMany(Book::class, 'reading_progress')
-                    ->withPivot('last_read_page', 'progress_percentage')
-                    ->withTimestamps();
+            ->withPivot('last_read_page', 'progress_percentage')
+            ->withTimestamps();
     }
 
     public function favorites()

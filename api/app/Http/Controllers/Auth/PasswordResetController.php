@@ -23,7 +23,7 @@ class PasswordResetController extends Controller
         Password::sendResetLink($request->only('email'));
 
         return response()->json([
-            'message' => 'If an account exists for that email, a password reset link has been sent.'
+            'message' => 'If an account exists for that email, a password reset link has been sent.',
         ], 200);
     }
 
@@ -49,12 +49,12 @@ class PasswordResetController extends Controller
         if ($status !== PasswordBroker::PASSWORD_RESET) {
             return response()->json([
                 'error' => 'Unprocessable Entity',
-                'message' => 'This password reset link is invalid or has expired.'
+                'message' => 'This password reset link is invalid or has expired.',
             ], 422);
         }
 
         return response()->json([
-            'message' => 'Password has been reset successfully. Please sign in with your new password.'
+            'message' => 'Password has been reset successfully. Please sign in with your new password.',
         ], 200);
     }
 }

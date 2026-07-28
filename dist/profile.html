@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Settings — Academy High Tech</title>
+  <meta name="description" content="Manage your account, security, privacy, billing and preferences.">
+  <meta name="theme-color" content="#0F172A">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="js/config.js"></script>
+  <script src="js/apiClient.js"></script>
+  <script src="js/utils/navigation.js"></script>
+  <script src="js/utils/scroll.js"></script>
+  <script src="js/components/bookCard.js"></script>
+  <script src="js/app.js" defer></script>  <style>
+    body {
+      background: var(--paper);
+      min-height: 100vh; color: var(--navy);
+      padding-top: var(--header-height);
+    }
+    .settings-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 2rem;
+      padding: 2.5rem 0 5rem;
+      align-items: start;
+    }
+    @media(max-width:900px) { .settings-layout { grid-template-columns: 1fr; } }
+
+    /* ── Sidebar ── */
+    .settings-sidebar {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      overflow: hidden;
+      position: sticky; top: calc(var(--header-height) + 1rem);
+    }
+    .sidebar-profile {
+      padding: 2rem 1.5rem;
+      text-align: center;
+      border-bottom: 1px solid var(--slate-200);
+    }
+    .avatar-ring {
+      width: 90px; height: 90px;
+      border-radius: 50%; overflow: hidden;
+      margin: 0 auto 1rem;
+      border: 3px solid var(--teal-deep);
+      background: var(--paper-soft);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; position: relative;
+    }
+    .avatar-ring img { width:100%; height:100%; object-fit:cover; }
+    .avatar-ring .avatar-placeholder { font-size:2.5rem; color: var(--slate); }
+    .avatar-ring .avatar-edit-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s;
+      font-size: 1.2rem;
+      color: white;
+    }
+    .avatar-ring:hover .avatar-edit-overlay { opacity: 1; }
+    .sidebar-name { color: var(--navy); font-weight: 600; font-size: 1rem; }
+    .sidebar-email { color: var(--slate); font-size: 0.8rem; margin-top: 0.2rem; }
+    .sidebar-plan {
+      display: inline-block; margin-top: 0.6rem;
+      padding: 0.15rem 0.6rem; border-radius: 20px;
+      font-family: var(--mono); font-size: 0.72rem;
+      background: var(--paper-soft); color: var(--teal-deep);
+      border: 1px solid var(--slate-200);
+    }
+
+    .settings-nav { padding: 0.75rem 0; }
+    .settings-nav-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.7rem 1.5rem;
+      cursor: pointer; transition: all 0.15s;
+      font-size: 0.9rem; color: var(--slate);
+      border-left: 3px solid transparent;
+    }
+    .settings-nav-item:hover { background: var(--paper-soft); color: var(--navy); }
+    .settings-nav-item.active { color: var(--teal-deep); border-left-color: var(--teal-deep); background: rgba(20,184,166,0.05); }
+    .settings-nav-item .nav-icon { font-size: 1.1rem; width: 20px; text-align: center; }
+    .settings-nav-item.danger { color: #ef4444; }
+    .settings-nav-item.danger:hover { background: rgba(239,68,68,0.06); }
+
+    /* ── Main panel ── */
+    .settings-main { display: flex; flex-direction: column; gap: 1.5rem; }
+    .settings-panel { display: none; flex-direction: column; gap: 1.5rem; }
+    .settings-panel.active { display: flex; }
+
+    .settings-card {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: 10px; padding: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .settings-card h2 {
+      color: var(--navy); font-family: var(--sans);
+      font-size: 1.1rem; font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .settings-card .card-desc {
+      color: var(--slate); font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--slate-200);
+    }
+
+    /* Form elements */
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    @media(max-width:600px) { .field-grid { grid-template-columns: 1fr; } }
+    .field-group { margin-bottom: 1.25rem; }
+    .field-group:last-child { margin-bottom: 0; }
+    .field-group label {
+      display: block; font-size: 0.78rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--slate); margin-bottom: 0.4rem;
+    }
+    .field-group input, .field-group textarea, .field-group select {
+      width: 100%; padding: 0.7rem 1rem;
+      background: white;
+      border: 1px solid var(--slate-300);
+      border-radius: 6px; color: var(--navy);
+      font-family: var(--sans); font-size: 0.9rem;
+      transition: all 0.2s; box-sizing: border-box;
+    }
+    .field-group textarea { resize: vertical; min-height: 80px; }
+    .field-group select option { background: white; color: var(--navy); }
+    .field-group input:focus, .field-group textarea:focus, .field-group select:focus {
+      outline: none; border-color: var(--teal);
+      box-shadow: 0 0 0 3px var(--teal-glow);
+    }
+
+    /* Password strength */
+    .pw-strength { margin-top: 0.5rem; }
+    .pw-bars { display: flex; gap: 4px; margin-bottom: 0.25rem; }
+    .pw-bar { flex: 1; height: 3px; border-radius: 2px; background: var(--slate-200); transition: background 0.3s; }
+    .pw-bar.weak { background: #ef4444; }
+    .pw-bar.fair { background: #f59e0b; }
+    .pw-bar.good { background: #10b981; }
+    .pw-label { font-size: 0.75rem; font-family: var(--mono); }
+
+    /* Toggle switch */
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.85rem 0;
+      border-bottom: 1px solid var(--slate-200);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-info h4 { color: var(--navy); font-size: 0.9rem; font-weight: 500; margin-bottom: 0.1rem; }
+    .toggle-info p  { color: var(--slate); font-size: 0.8rem; }
+    .toggle-switch {
+      position: relative; width: 44px; height: 24px; flex-shrink: 0;
+    }
+    .toggle-switch input { display: none; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: var(--slate-200);
+      border-radius: 24px; cursor: pointer;
+      transition: background 0.25s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: white; top: 3px; left: 3px;
+      transition: transform 0.25s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: var(--teal-deep); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+    /* Buttons */
+    .btn-save {
+      background: var(--teal-deep); color: white;
+      border: none; padding: 0.7rem 1.75rem;
+      border-radius: 6px; font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; transition: background 0.2s;
+      font-family: var(--sans);
+    }
+    .btn-save:hover { background: var(--teal); }
+    .btn-ghost {
+      background: white;
+      border: 1px solid var(--slate-300);
+      color: var(--slate); padding: 0.7rem 1.75rem;
+      border-radius: 6px; font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; transition: all 0.2s;
+      font-family: var(--sans);
+    }
+    .btn-ghost:hover { background: var(--paper-soft); color: var(--navy); }
+    .btn-danger {
+      background: rgba(239,68,68,0.05);
+      border: 1px solid rgba(239,68,68,0.15);
+      color: #ef4444; padding: 0.7rem 1.75rem;
+      border-radius: 6px; font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; transition: all 0.2s;
+      font-family: var(--sans);
+    }
+    .btn-danger:hover { background: rgba(239,68,68,0.1); }
+
+    /* Alert banner */
+    .alert {
+      padding: 0.85rem 1rem; border-radius: 6px;
+      font-size: 0.875rem; display: none;
+      margin-bottom: 1rem;
+    }
+    .alert.success { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #10b981; display: block; }
+    .alert.error   { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.3);  color: #ef4444; display: block; }
+
+    /* Session row */
+    .session-row {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 0.9rem 0; border-bottom: 1px solid var(--slate-200);
+    }
+    .session-row:last-child { border-bottom: none; }
+    .session-icon { font-size: 1.5rem; }
+    .session-info h4 { color: var(--navy); font-size: 0.9rem; font-weight: 500; }
+    .session-info p  { color: var(--slate); font-size: 0.78rem; font-family: var(--mono); }
+    .session-current { margin-left: auto; font-size: 0.72rem; color: var(--teal-deep); font-family: var(--mono); }
+
+    /* Billing card */
+    .saved-card-row {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 0.9rem 0; border-bottom: 1px solid var(--slate-200);
+    }
+    .card-icon { font-size: 1.5rem; }
+    .card-info h4 { color: var(--navy); font-size: 0.9rem; }
+    .card-info p  { color: var(--slate); font-size: 0.8rem; }
+
+    /* Danger zone */
+    .danger-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap;
+      padding: 1rem 0; border-bottom: 1px solid var(--slate-200);
+    }
+    .danger-row:last-child { border-bottom: none; }
+    .danger-info h4 { color: var(--navy); font-size: 0.9rem; font-weight: 500; }
+    .danger-info p  { color: var(--slate); font-size: 0.8rem; max-width: 400px; }
+
+    /* Modal */
+    .confirm-modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 99999; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .confirm-modal-backdrop.open { opacity: 1; pointer-events: auto; }
+    .confirm-modal {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: 10px; padding: 2rem;
+      max-width: 440px; width: 90%;
+      box-shadow: var(--shadow-xl);
+    }
+    .confirm-modal h3 { color: var(--navy); margin-bottom: 0.5rem; }
+    .confirm-modal p  { color: var(--slate); font-size: 0.9rem; margin-bottom: 1.25rem; }
+  </style>5rem; }
+  </style>
+  <link rel="stylesheet" crossorigin href="/assets/main-CRjB44YJ.css">
+  <link rel="stylesheet" crossorigin href="/assets/pages-CSU-YOTZ.css">
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <a href="index.html" class="logo" aria-label="Academy High Tech">
+    <span>academy<span class="slash">/</span>hightech</span>
+    <span class="logo-line"></span>
+  </a>
+  <ul class="nav-links"></ul>
+</nav>
+
+<div class="container">
+  <div class="settings-layout">
+
+    <!-- ══ Sidebar ══ -->
+    <aside class="settings-sidebar">
+      <div class="sidebar-profile">
+        <label style="cursor:pointer">
+          <div class="avatar-ring" id="avatar-ring">
+            <img id="avatar-img" src="" alt="Avatar" style="display:none">
+            <div class="avatar-placeholder" id="avatar-placeholder">👤</div>
+            <div class="avatar-edit-overlay">✏️</div>
+          </div>
+          <input type="file" id="avatar-file-input" accept="image/*" style="display:none">
+        </label>
+        <div class="sidebar-name" id="sidebar-name">Loading…</div>
+        <div class="sidebar-email" id="sidebar-email">—</div>
+        <div class="sidebar-plan" id="sidebar-plan">FREE</div>
+      </div>
+
+      <nav class="settings-nav">
+        <div class="settings-nav-item active" data-panel="personal"><span class="nav-icon">👤</span> Personal Info</div>
+        <div class="settings-nav-item" data-panel="security"><span class="nav-icon">🔒</span> Account &amp; Security</div>
+        <div class="settings-nav-item" data-panel="notifications"><span class="nav-icon">🔔</span> Notifications</div>
+        <div class="settings-nav-item" data-panel="privacy"><span class="nav-icon">🛡️</span> Privacy &amp; Data</div>
+        <div class="settings-nav-item" data-panel="billing"><span class="nav-icon">💳</span> Billing &amp; Payments</div>
+        <div class="settings-nav-item" data-panel="preferences"><span class="nav-icon">🌐</span> Preferences</div>
+        <div class="settings-nav-item danger" data-panel="danger"><span class="nav-icon">⚙️</span> Account Actions</div>
+      </nav>
+    </aside>
+
+    <!-- ══ Main content ══ -->
+    <main class="settings-main">
+
+      <!-- ─── 1. PERSONAL INFO ─── -->
+      <div id="panel-personal" class="settings-panel active">
+        <div class="settings-card">
+          <h2>Personal Information</h2>
+          <p class="card-desc">Update your public-facing profile details.</p>
+          <div id="alert-personal" class="alert"></div>
+          <form id="form-personal">
+            <div class="field-grid">
+              <div class="field-group">
+                <label>First Name</label>
+                <input type="text" id="first_name" placeholder="Ada">
+              </div>
+              <div class="field-group">
+                <label>Last Name</label>
+                <input type="text" id="last_name" placeholder="Lovelace">
+              </div>
+            </div>
+            <div class="field-group">
+              <label>Username</label>
+              <input type="text" id="username" placeholder="@adalovelace">
+            </div>
+            <div class="field-group">
+              <label>Bio</label>
+              <textarea id="bio" placeholder="Write a short bio about yourself…"></textarea>
+            </div>
+            <button type="submit" class="btn-save">Save Changes</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ─── 2. ACCOUNT & SECURITY ─── -->
+      <div id="panel-security" class="settings-panel">
+        <!-- Email -->
+        <div class="settings-card">
+          <h2>Email Address</h2>
+          <p class="card-desc">Your sign-in email and account identifier.</p>
+          <div id="alert-email" class="alert"></div>
+          <div class="field-group">
+            <label>Email</label>
+            <input type="email" id="email" placeholder="you@example.com">
+          </div>
+          <button class="btn-save" onclick="saveEmail()">Update Email</button>
+        </div>
+
+        <!-- Password -->
+        <div class="settings-card">
+          <h2>Password</h2>
+          <p class="card-desc">Use a strong, unique password.</p>
+          <div id="alert-pw" class="alert"></div>
+          <div class="field-group">
+            <label>New Password</label>
+            <input type="password" id="pw-new" placeholder="••••••••" oninput="checkPwStrength(this.value)">
+            <div class="pw-strength">
+              <div class="pw-bars">
+                <div class="pw-bar" id="pwb1"></div>
+                <div class="pw-bar" id="pwb2"></div>
+                <div class="pw-bar" id="pwb3"></div>
+                <div class="pw-bar" id="pwb4"></div>
+              </div>
+              <span class="pw-label" id="pw-label" style="color:var(--slate)">Enter a password</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Confirm Password</label>
+            <input type="password" id="pw-confirm" placeholder="••••••••">
+          </div>
+          <button class="btn-save" onclick="savePassword()">Change Password</button>
+        </div>
+
+        <!-- 2FA -->
+        <div class="settings-card">
+          <h2>Two-Factor Authentication</h2>
+          <p class="card-desc">Add an extra layer of security to your account.</p>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <h4>Authenticator App (TOTP)</h4>
+              <p>Use Google Authenticator or similar apps.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="twofa-app" onchange="save2FA('totp', this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <h4>SMS Authentication</h4>
+              <p>Receive a code via text message.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="twofa-sms" onchange="save2FA('sms', this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Active sessions -->
+        <div class="settings-card">
+          <h2>Active Sessions</h2>
+          <p class="card-desc">Devices currently signed into your account.</p>
+          <div id="sessions-list">
+            <p style="color:var(--slate)">Loading sessions…</p>
+          </div>
+          <br>
+          <button class="btn-ghost" onclick="logoutAllDevices()" style="margin-top:0.5rem">Log out from all other devices</button>
+        </div>
+      </div>
+
+      <!-- ─── 3. NOTIFICATIONS ─── -->
+      <div id="panel-notifications" class="settings-panel">
+        <div class="settings-card">
+          <h2>Email Notifications</h2>
+          <p class="card-desc">Choose which emails we send you.</p>
+          <div class="toggle-row">
+            <div class="toggle-info"><h4>Marketing Emails</h4><p>New releases, promotions, and featured books.</p></div>
+            <label class="toggle-switch"><input type="checkbox" id="notif-marketing" onchange="saveNotif('notification_email_marketing', this.checked)"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><h4>Activity Emails</h4><p>Reading milestones, progress summaries.</p></div>
+            <label class="toggle-switch"><input type="checkbox" id="notif-activity" onchange="saveNotif('notification_email_activity', this.checked)"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><h4>System Emails</h4><p>Account security and service announcements.</p></div>
+            <label class="toggle-switch"><input type="checkbox" id="notif-system" onchange="saveNotif('notification_email_system', this.checked)" checked><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div class="settings-card">
+          <h2>Push &amp; SMS</h2>
+          <p class="card-desc">Real-time alerts on your device.</p>
+          <div class="toggle-row">
+            <div class="toggle-info"><h4>Browser Push Notifications</h4><p>Get alerts directly in your browser.</p></div>
+            <label class="toggle-switch"><input type="checkbox" id="notif-push" onchange="saveNotif('notification_push', this.checked)"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><h4>SMS Updates</h4><p>Text messages for account actions.</p></div>
+            <label class="toggle-switch"><input type="checkbox" id="notif-sms" onchange="saveNotif('notification_sms', this.checked)"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── 4. PRIVACY & DATA ─── -->
+      <div id="panel-privacy" class="settings-panel">
+        <div class="settings-card">
+          <h2>Profile Visibility</h2>
+          <p class="card-desc">Control who can see your profile.</p>
+          <div class="field-group">
+            <label>Visibility</label>
+            <select id="privacy-visibility" onchange="saveField('privacy_visibility', this.value)">
+              <option value="public">Public — anyone can view</option>
+              <option value="private">Private — only you</option>
+              <option value="hidden">Hidden — excluded from search engines</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-card">
+          <h2>Data Export (GDPR / KVKK)</h2>
+          <p class="card-desc">Download a full copy of your personal data in JSON format.</p>
+          <button class="btn-ghost" onclick="exportData()">⬇ Download My Data</button>
+        </div>
+      </div>
+
+      <div id="panel-billing" class="settings-panel">
+        <div class="settings-card">
+          <h2>Subscription Plan</h2>
+          <p class="card-desc">Your current plan and renewal details.</p>
+          <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+            <div>
+              <div style="color:white;font-size:1.25rem;font-weight:600" id="billing-plan">FREE</div>
+              <div style="color:var(--slate);font-size:0.85rem" id="billing-renewal">No active subscription</div>
+            </div>
+            <a href="subscription.html" class="btn-save" style="text-decoration:none;display:inline-block">Manage Plan →</a>
+            <div id="profile-cancel-wrap" style="display:none;">
+              <button onclick="cancelSubscriptionFromProfile()" style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; padding: 0.45rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 500;">Cancel Subscription</button>
+            </div>
+          </div>
+        </div>
+        <div class="settings-card">
+          <h2>Payment Methods</h2>
+          <p class="card-desc">Cards used for recent payments on your account.</p>
+          <div id="saved-cards-list">
+            <p style="color:var(--slate);font-size:0.85rem">Loading payment methods…</p>
+          </div>
+          <br>
+          <a href="subscription.html" class="btn-ghost" style="text-decoration:none;display:inline-block;margin-top:0.25rem">+ Add / Manage Plan</a>
+        </div>
+        <div class="settings-card">
+          <h2>Invoices</h2>
+          <p class="card-desc">Your past billing statements.</p>
+          <div id="billing-invoices">Loading…</div>
+          <br>
+          <a href="subscription.html" class="btn-ghost" style="text-decoration:none;display:inline-block">View All Invoices</a>
+        </div>
+      </div>
+
+      <!-- ─── 6. PREFERENCES ─── -->
+      <div id="panel-preferences" class="settings-panel">
+        <div class="settings-card">
+          <h2>Language &amp; Region</h2>
+          <p class="card-desc">Choose your preferred language and timezone.</p>
+          <div class="field-grid">
+            <div class="field-group">
+              <label>Language</label>
+              <select id="pref-language" onchange="saveField('language', this.value)">
+                <option value="en">English</option>
+                <option value="tr">Türkçe</option>
+                <option value="de">Deutsch</option>
+                <option value="fr">Français</option>
+                <option value="es">Español</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Timezone</label>
+              <select id="pref-timezone" onchange="saveField('timezone', this.value)">
+                <option value="UTC">UTC</option>
+                <option value="Europe/Istanbul">Istanbul (UTC+3)</option>
+                <option value="Europe/London">London (UTC±0)</option>
+                <option value="America/New_York">New York (UTC-5)</option>
+                <option value="America/Los_Angeles">Los Angeles (UTC-8)</option>
+                <option value="Asia/Tokyo">Tokyo (UTC+9)</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn-save" onclick="savePrefs()">Save Preferences</button>
+        </div>
+      </div>
+
+      <!-- ─── 7. ACCOUNT ACTIONS ─── -->
+      <div id="panel-danger" class="settings-panel">
+        <div class="settings-card" style="border-color:rgba(239,68,68,0.2)">
+          <h2 style="color:#ef4444">Account Actions</h2>
+          <p class="card-desc">Irreversible actions — proceed with caution.</p>
+
+          <div class="danger-row">
+            <div class="danger-info">
+              <h4>Deactivate Account</h4>
+              <p>Temporarily pause your account. You can reactivate anytime by signing back in.</p>
+            </div>
+            <button class="btn-danger" onclick="openConfirmModal('deactivate')">Deactivate</button>
+          </div>
+
+          <div class="danger-row">
+            <div class="danger-info">
+              <h4>Delete Account</h4>
+              <p>Permanently erase your account, all data, and purchase history. This cannot be undone.</p>
+            </div>
+            <button class="btn-danger" onclick="openConfirmModal('delete')">Delete Account</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Confirm modal (shared) -->
+<div class="confirm-modal-backdrop" id="confirm-modal-backdrop">
+  <div class="confirm-modal">
+    <h3 id="modal-title">Confirm action</h3>
+    <p id="modal-desc">This action cannot be undone.</p>
+    <div class="field-group">
+      <label>Enter your password to confirm</label>
+      <input type="password" id="modal-password" placeholder="••••••••">
+    </div>
+    <div id="modal-alert" class="alert"></div>
+    <div style="display:flex;gap:0.75rem">
+      <button class="btn-danger" id="modal-confirm-btn" style="flex:1">Confirm</button>
+      <button class="btn-ghost" onclick="closeConfirmModal()" style="flex:1">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'http://127.0.0.1:8000/api';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const token = localStorage.getItem('auth_token');
+  if (!token) { window.location.href = 'auth.html?redirect=profile.html'; return; }
+
+  window._token = token;
+  window._hdrs = { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' };
+
+  /* ─ Sidebar navigation ─ */
+  document.querySelectorAll('.settings-nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
+      document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+      item.classList.add('active');
+      document.getElementById('panel-' + item.dataset.panel).classList.add('active');
+    });
+  });
+
+  /* ─ Load profile ─ */
+  await loadProfile();
+  loadSessions();
+  loadInvoices();
+
+  /* ─ Avatar upload ─ */
+  document.getElementById('avatar-file-input').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2 MB.'); return; }
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      await patchProfile({ avatar: reader.result });
+      document.getElementById('avatar-img').src = reader.result;
+      document.getElementById('avatar-img').style.display = 'block';
+      document.getElementById('avatar-placeholder').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  /* ─ Personal form ─ */
+  document.getElementById('form-personal').addEventListener('submit', async e => {
+    e.preventDefault();
+    const res = await patchProfile({
+      first_name: document.getElementById('first_name').value.trim(),
+      last_name:  document.getElementById('last_name').value.trim(),
+      username:   document.getElementById('username').value.trim(),
+      bio:        document.getElementById('bio').value.trim(),
+    });
+    showAlert('alert-personal', res.ok ? 'success' : 'error',
+      res.ok ? 'Profile updated!' : 'Failed to save — check inputs.');
+    if (res.ok) {
+      const data = await res.json();
+      localStorage.setItem('user', JSON.stringify(data.user));
+      updateSidebar(data.user);
+    }
+  });
+});
+
+/* ──────────── Load Profile ──────────── */
+async function loadProfile() {
+  const res = await fetch(`${API}/user/profile`, { headers: window._hdrs });
+  if (!res.ok) return;
+  const { user } = await res.json();
+  const info = user.profile_info || {};
+
+  document.getElementById('first_name').value = info.first_name || info.name || '';
+  document.getElementById('last_name').value  = info.last_name  || '';
+  document.getElementById('username').value   = info.username   || '';
+  document.getElementById('bio').value        = info.bio        || '';
+  document.getElementById('email').value      = user.email      || '';
+  document.getElementById('privacy-visibility').value = info.privacy_visibility || 'public';
+  document.getElementById('pref-language').value = info.language || 'en';
+  document.getElementById('pref-timezone').value = info.timezone || 'UTC';
+
+  // Notification toggles
+  document.getElementById('notif-marketing').checked = info.notification_email_marketing ?? false;
+  document.getElementById('notif-activity').checked  = info.notification_email_activity  ?? false;
+  document.getElementById('notif-system').checked    = info.notification_email_system    ?? true;
+  document.getElementById('notif-push').checked      = info.notification_push            ?? false;
+  document.getElementById('notif-sms').checked       = info.notification_sms             ?? false;
+
+  // 2FA
+  document.getElementById('twofa-app').checked = info.twofa_enabled === 'totp';
+  document.getElementById('twofa-sms').checked = info.twofa_enabled === 'sms';
+
+  // Billing
+  const subStatus = (user.subscription_status || 'free');
+  document.getElementById('billing-plan').textContent    = subStatus.toUpperCase();
+  document.getElementById('billing-renewal').textContent = subStatus !== 'free'
+    ? 'Active subscription · ' + subStatus.charAt(0).toUpperCase() + subStatus.slice(1) + ' plan'
+    : 'No active subscription';
+
+  // Show cancel button for paid plans
+  const cancelWrap = document.getElementById('profile-cancel-wrap');
+  if (cancelWrap && subStatus !== 'free') {
+    cancelWrap.style.display = 'block';
+  }
+
+  // Load payment methods (from payment history)
+  loadBillingData();
+
+  updateSidebar(user);
+}
+
+async function loadBillingData() {
+  try {
+    const res = await fetch(`${API}/user/payments`, { headers: window._hdrs });
+    if (!res.ok) return;
+    const payments = await res.json();
+
+    // Show payment methods section
+    const cardsContainer = document.getElementById('saved-cards-list');
+    if (cardsContainer) {
+      if (payments && payments.length > 0) {
+        // Show unique gateways used
+        const gateways = [...new Set(payments.map(p => p.gateway))];
+        cardsContainer.innerHTML = gateways.map(g => `
+          <div class="saved-card-row">
+            <div class="card-icon">💳</div>
+            <div class="card-info">
+              <h4>${g.charAt(0).toUpperCase() + g.slice(1)}</h4>
+              <p>Payment gateway · Last used for ${g === 'stripe' ? 'Stripe' : g.charAt(0).toUpperCase() + g.slice(1)} checkout</p>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        cardsContainer.innerHTML = '<p style="color:var(--slate);font-size:0.85rem">No payment methods on record.</p>';
+      }
+    }
+
+    // Show last 3 invoices in billing section
+    const invoicesContainer = document.getElementById('billing-invoices');
+    if (invoicesContainer) {
+      if (payments && payments.length > 0) {
+        invoicesContainer.innerHTML = payments.slice(0, 3).map(p => {
+          const dateStr = new Date(p.created_at).toLocaleDateString();
+          const statusCls = p.status === 'success' ? 'color:#10b981' : (p.status === 'pending' ? 'color:#f59e0b' : 'color:#ef4444');
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <span style="font-size:0.85rem">${dateStr} — ${p.gateway.toUpperCase()}</span>
+            <span style="font-weight:600;color:white">$${parseFloat(p.amount).toFixed(2)}</span>
+            <span style="font-family:var(--mono);font-size:0.75rem;${statusCls}">${p.status.toUpperCase()}</span>
+          </div>`;
+        }).join('') + (payments.length > 3 ? '<p style="color:var(--slate);font-size:0.8rem;margin-top:0.5rem">+ ' + (payments.length - 3) + ' more invoices</p>' : '');
+      } else {
+        invoicesContainer.textContent = 'No invoices yet.';
+      }
+    }
+  } catch (err) {
+    console.error('Error loading billing data:', err);
+  }
+}
+
+window.cancelSubscriptionFromProfile = async function() {
+  const token = localStorage.getItem('auth_token');
+  if (!confirm('Are you sure you want to cancel your subscription? You will be moved to the Free plan immediately.')) return;
+
+  try {
+    const res = await fetch(`${API}/subscriptions/cancel`, {
+      method: 'DELETE',
+      headers: window._hdrs
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Cancellation failed.');
+
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    user.subscription_status = 'free';
+    localStorage.setItem('user', JSON.stringify(user));
+
+    alert(data.message || 'Your subscription has been cancelled.');
+    window.location.reload();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+};
+
+
+
+function updateSidebar(user) {
+  const info = user.profile_info || {};
+  const fullName = [info.first_name || info.name, info.last_name].filter(Boolean).join(' ') || 'Your Name';
+  document.getElementById('sidebar-name').textContent  = fullName;
+  document.getElementById('sidebar-email').textContent = user.email;
+  document.getElementById('sidebar-plan').textContent  = user.subscription_status.toUpperCase();
+  const avatarImg = document.getElementById('avatar-img');
+  const placeholder = document.getElementById('avatar-placeholder');
+  if (info.avatar) {
+    avatarImg.src = info.avatar;
+    avatarImg.style.display = 'block';
+    placeholder.style.display = 'none';
+  }
+}
+
+/* ──────────── Sessions ──────────── */
+async function loadSessions() {
+  const res = await fetch(`${API}/user/sessions`, { headers: window._hdrs });
+  if (!res.ok) return;
+  const sessions = await res.json();
+  const container = document.getElementById('sessions-list');
+  container.innerHTML = '';
+  sessions.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'session-row';
+    row.innerHTML = `
+      <div class="session-icon">💻</div>
+      <div class="session-info">
+        <h4>${s.name}${s.is_current ? ' (this device)' : ''}</h4>
+        <p>Last active: ${s.last_used || 'Active now'} · Created: ${s.created_at}</p>
+      </div>
+      ${s.is_current ? '<div class="session-current">● Current</div>' : ''}`;
+    container.appendChild(row);
+  });
+}
+
+window.logoutAllDevices = async () => {
+  if (!confirm('Sign out from all other devices?')) return;
+  const res = await fetch(`${API}/user/sessions`, { method: 'DELETE', headers: window._hdrs });
+  if (res.ok) { await loadSessions(); alert('Done! All other sessions revoked.'); }
+};
+
+/* ──────────── Invoices ──────────── */
+async function loadInvoices() {
+  const res = await fetch(`${API}/user/payments`, { headers: window._hdrs });
+  if (!res.ok) return;
+  const payments = await res.json();
+  const container = document.getElementById('billing-invoices');
+  if (!payments.length) { container.innerHTML = '<p style="color:var(--slate)">No invoices yet.</p>'; return; }
+  container.innerHTML = payments.slice(0,3).map(p => `
+    <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+      <div style="color:white;font-weight:600">$${parseFloat(p.amount).toFixed(2)}</div>
+      <div style="color:var(--slate);font-size:0.8rem;font-family:var(--mono)">${p.transaction_id}</div>
+      <div style="margin-left:auto;font-size:0.75rem;padding:0.15rem 0.5rem;border-radius:20px;background:rgba(16,185,129,0.1);color:#10b981">${p.status.toUpperCase()}</div>
+    </div>`).join('');
+}
+
+/* ──────────── Generic patch helper ──────────── */
+async function patchProfile(payload) {
+  return fetch(`${API}/user/profile`, {
+    method: 'PUT', headers: window._hdrs, body: JSON.stringify(payload)
+  });
+}
+
+/* ──────────── Save helpers ──────────── */
+window.saveEmail = async () => {
+  const res = await patchProfile({ email: document.getElementById('email').value.trim() });
+  showAlert('alert-email', res.ok ? 'success' : 'error', res.ok ? 'Email updated!' : 'Failed to update email.');
+};
+
+window.savePassword = async () => {
+  const pw  = document.getElementById('pw-new').value;
+  const pw2 = document.getElementById('pw-confirm').value;
+  if (pw !== pw2) { showAlert('alert-pw','error','Passwords do not match.'); return; }
+  if (pw.length < 6) { showAlert('alert-pw','error','Minimum 6 characters required.'); return; }
+  const res = await patchProfile({ password: pw });
+  showAlert('alert-pw', res.ok ? 'success' : 'error', res.ok ? 'Password changed!' : 'Failed to change password.');
+  if (res.ok) { document.getElementById('pw-new').value = ''; document.getElementById('pw-confirm').value = ''; }
+};
+
+window.save2FA = async (type, enabled) => {
+  await patchProfile({ twofa_enabled: enabled ? type : null });
+};
+
+window.saveNotif = async (key, value) => {
+  await patchProfile({ [key]: value });
+};
+
+window.saveField = async (key, value) => {
+  await patchProfile({ [key]: value });
+};
+
+window.savePrefs = async () => {
+  const res = await patchProfile({
+    language: document.getElementById('pref-language').value,
+    timezone: document.getElementById('pref-timezone').value,
+  });
+  if (res.ok) showTempAlert('Preferences saved!');
+};
+
+/* ──────────── Data export ──────────── */
+window.exportData = async () => {
+  const res = await fetch(`${API}/user/export`, { headers: window._hdrs });
+  if (!res.ok) { alert('Export failed.'); return; }
+  const data = await res.json();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'my-academy-data.json'; a.click();
+  URL.revokeObjectURL(url);
+};
+
+/* ──────────── Password strength ──────────── */
+window.checkPwStrength = (pw) => {
+  const bars  = ['pwb1','pwb2','pwb3','pwb4'];
+  const label = document.getElementById('pw-label');
+  let score   = 0;
+  if (pw.length >= 8)           score++;
+  if (/[A-Z]/.test(pw))        score++;
+  if (/[0-9]/.test(pw))        score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const levels = ['weak','fair','good','good'];
+  const labels = ['Weak', 'Fair', 'Good', 'Strong'];
+  const colors = ['#ef4444','#f59e0b','#10b981','#10b981'];
+  bars.forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.className = 'pw-bar' + (i < score ? ' ' + (levels[score-1] || '') : '');
+  });
+  label.textContent = pw.length ? labels[Math.min(score-1,3)] || 'Too short' : 'Enter a password';
+  label.style.color  = pw.length ? colors[Math.min(score-1,3)] : 'var(--slate)';
+};
+
+/* ──────────── Danger zone modal ──────────── */
+let _dangerAction = null;
+window.openConfirmModal = (action) => {
+  _dangerAction = action;
+  const titles = { deactivate: 'Deactivate Your Account', delete: 'Permanently Delete Account' };
+  const descs  = {
+    deactivate: 'Your account will be paused. Enter your password to continue.',
+    delete: 'All your data will be permanently erased. This CANNOT be undone. Enter your password to confirm.'
+  };
+  document.getElementById('modal-title').textContent = titles[action];
+  document.getElementById('modal-desc').textContent  = descs[action];
+  document.getElementById('modal-password').value    = '';
+  document.getElementById('modal-alert').className   = 'alert';
+  document.getElementById('confirm-modal-backdrop').classList.add('open');
+};
+
+window.closeConfirmModal = () => {
+  document.getElementById('confirm-modal-backdrop').classList.remove('open');
+};
+
+document.getElementById('modal-confirm-btn').addEventListener('click', async () => {
+  const pw = document.getElementById('modal-password').value;
+  if (!pw) { showAlert('modal-alert','error','Please enter your password.'); return; }
+
+  const endpoint = _dangerAction === 'delete' ? `${API}/user/account` : `${API}/user/deactivate`;
+  const method   = _dangerAction === 'delete' ? 'DELETE' : 'POST';
+
+  const res = await fetch(endpoint, {
+    method, headers: window._hdrs, body: JSON.stringify({ password: pw })
+  });
+
+  if (res.ok) {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    alert(_dangerAction === 'delete' ? 'Your account has been deleted.' : 'Account deactivated. Goodbye!');
+    window.location.href = 'index.html';
+  } else {
+    const err = await res.json();
+    showAlert('modal-alert','error', err.message || 'Incorrect password.');
+  }
+});
+
+/* ──────────── Utility ──────────── */
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = `alert ${type}`;
+  el.textContent = msg;
+  setTimeout(() => { el.style.display = 'none'; el.className = 'alert'; }, 5000);
+}
+
+function showTempAlert(msg) {
+  const el = document.createElement('div');
+  el.className = 'alert success';
+  el.textContent = msg;
+  el.style.cssText = 'position:fixed;top:80px;right:20px;z-index:99999;min-width:200px;animation:fadeIn .2s';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+</script>
+</body>
+</html>

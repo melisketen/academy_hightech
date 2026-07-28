@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\BookController;
@@ -25,6 +26,7 @@ Route::post('webhooks/payment', [WebhookController::class, 'handlePayment']);
 // --- Protected Routes (Requires Sanctum Token) ---
 Route::middleware('auth:sanctum')->group(function () {
     // User Profile & Account
+    Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::get('user/profile', [AuthController::class, 'profile']);
     Route::put('user/profile', [AuthController::class, 'updateProfile']);
     Route::get('user/payments', [AuthController::class, 'payments']);
@@ -58,16 +60,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Subscriptions Checkouts
     Route::post('subscriptions/subscribe', [SubscriptionController::class, 'subscribe']);
+    Route::post('subscriptions/upgrade', [SubscriptionController::class, 'upgrade']);
     Route::delete('subscriptions/cancel', [SubscriptionController::class, 'cancel']);
     Route::post('books/{id}/notify', [SubscriptionController::class, 'notifyRelease']);
 
     // Admin Operations
     Route::middleware('admin')->prefix('admin')->group(function () {
-        Route::get('stats', [\App\Http\Controllers\AdminController::class, 'stats']);
-        Route::get('users', [\App\Http\Controllers\AdminController::class, 'users']);
-        Route::post('users/{id}/toggle-deactivate', [\App\Http\Controllers\AdminController::class, 'toggleDeactivate']);
-        Route::put('users/{id}/subscription', [\App\Http\Controllers\AdminController::class, 'updateSubscription']);
-        Route::get('payments', [\App\Http\Controllers\AdminController::class, 'payments']);
+        Route::get('stats', [AdminController::class, 'stats']);
+        Route::get('users', [AdminController::class, 'users']);
+        Route::post('users/{id}/toggle-deactivate', [AdminController::class, 'toggleDeactivate']);
+        Route::put('users/{id}/subscription', [AdminController::class, 'updateSubscription']);
+        Route::get('payments', [AdminController::class, 'payments']);
     });
 });
-

@@ -12,6 +12,10 @@
   <link rel="stylesheet" href="../css/variables.css">
   <link rel="stylesheet" href="../css/main.css">
   <script src="../js/config.js"></script>
+  <script src="../js/apiClient.js"></script>
+  <script src="../js/utils/navigation.js"></script>
+  <script src="../js/utils/scroll.js"></script>
+  <script src="../js/components/bookCard.js"></script>
   
   <!-- PDF.js library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -347,10 +351,9 @@
         document.getElementById('prev-page-btn').disabled = (num <= 1);
         document.getElementById('next-page-btn').disabled = (num >= pdfDoc.numPages);
 
-        // Sync progress with backend — always sync immediately so it
-        // persists to SQLite even without Redis available in local env.
+        // Sync progress with backend — debounced by default
         const progressPercentage = Math.round((num / pdfDoc.numPages) * 100 * 10) / 10;
-        window.updateReadingProgress(bookId, num, progressPercentage, true);
+        window.updateReadingProgress(bookId, num, progressPercentage, false);
       });
     }
 

@@ -109,88 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Dynamic Authentication Navbar Updater
-  const navLinksContainer = document.getElementById('nav') ? document.querySelector('.nav-links') : null;
-  if (navLinksContainer) {
-    const token = localStorage.getItem('auth_token');
-    const userJson = localStorage.getItem('user');
-    const user = userJson ? JSON.parse(userJson) : null;
-    
-    // Determine path prefixes
-    const isSubdirectory = window.location.pathname.includes('/books/') || window.location.pathname.includes('/series/');
-    const prefix = isSubdirectory ? '../' : '';
-
-    let linksHtml = `
-      <li><a href="${prefix}manifesto.html">Manifesto</a></li>
-      <li><a href="${prefix}index.html#series">Series</a></li>
-    `;
-
-    if (token && user) {
-      const subBadge = (user.subscription_status || 'free').toUpperCase();
-      const adminLink = user.is_admin ? `<li><a href="${prefix}admin.html">Admin</a></li>` : '';
-      linksHtml += `
-        <li><a href="${prefix}library.html">Library</a></li>
-        <li><a href="${prefix}profile.html">Profile</a></li>
-        <li><a href="${prefix}subscription.html">Subscription</a></li>
-        ${adminLink}
-        <li><a href="#" id="nav-logout-btn">Sign Out</a></li>
-        <li><span class="nav-user-badge" style="color: var(--teal); font-family: var(--mono); font-size: 0.8rem; border: 1px solid var(--teal); padding: 2px 6px; border-radius: 4px; vertical-align: middle;">${subBadge}</span></li>
-      `;
-    } else {
-      linksHtml += `
-        <li><a href="${prefix}books/git-for-teams.html">First title</a></li>
-        <li><a href="${prefix}author.html">Author</a></li>
-        <li><a href="${prefix}auth.html" class="btn-signin" style="background: var(--navy); color: white; padding: 0.4rem 0.8rem; border-radius: 4px; font-weight: 500; text-decoration: none;">Sign In</a></li>
-      `;
-    }
-
-    linksHtml += `<li><a href="https://academyhightech.com.tr" class="lang-switch">TR ↗</a></li>`;
-    navLinksContainer.innerHTML = linksHtml;
-
-    // Logout listener
-    const logoutBtn = document.getElementById('nav-logout-btn');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user');
-        window.location.href = prefix + 'index.html';
-      });
-    }
-
-    // Mobile menu toggle — the nav-links list has no room to lay out
-    // horizontally below the responsive breakpoint, so collapse it behind
-    // a hamburger button instead.
-    let navToggle = nav.querySelector('.nav-toggle');
-    if (!navToggle) {
-      navToggle = document.createElement('button');
-      navToggle.className = 'nav-toggle';
-      navToggle.type = 'button';
-      navToggle.setAttribute('aria-label', 'Toggle navigation menu');
-      navToggle.setAttribute('aria-expanded', 'false');
-      navToggle.innerHTML = '<span class="nav-toggle-bars"><span></span><span></span><span></span></span>';
-      nav.appendChild(navToggle);
-    }
-
-    navToggle.addEventListener('click', () => {
-      const isOpen = navLinksContainer.classList.toggle('open');
-      navToggle.setAttribute('aria-expanded', String(isOpen));
-    });
-
-    // Close the mobile menu after choosing a link, or on outside click
-    navLinksContainer.addEventListener('click', (e) => {
-      if (e.target.tagName === 'A') {
-        navLinksContainer.classList.remove('open');
-        navToggle.setAttribute('aria-expanded', 'false');
-      }
-    });
-
-    document.addEventListener('click', (e) => {
-      if (navLinksContainer.classList.contains('open') && !nav.contains(e.target)) {
-        navLinksContainer.classList.remove('open');
-        navToggle.setAttribute('aria-expanded', 'false');
-      }
-    });
+  // Dynamic Authentication Navbar Updater via navUtils
+  if (window.navUtils && window.navUtils.setupNavbar) {
+    window.navUtils.setupNavbar();
   }
 
   // Dynamic Shelf Tracker Initializer for Series and Book Details Pages
@@ -206,14 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (token) {
       try {
-        const response = await fetch(`${API_BASE_URL}/books/my-shelf`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          }
-        });
-        if (response.ok) {
-          const list = await response.json();
+        const list = await apiClient.get('/books/my-shelf');
+        if (list && Array.isArray(list)) {
           list.forEach(item => {
             trackedIds[item.book_id] = item.status;
           });
@@ -279,8 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (!token) {
             // Redirect to auth
-            const prefix = window.location.pathname.includes('/series/') ? '../' : '';
-            window.location.href = `${prefix}auth.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+            window.location.href = window.navUtils ? window.navUtils.getAuthRedirectUrl() : 'auth.html';
             return;
           }
 
@@ -288,36 +202,21 @@ document.addEventListener('DOMContentLoaded', () => {
           if (action === 'remove') {
             if (!confirm('Remove this book from your shelf?')) return;
             try {
-              const res = await fetch(`${API_BASE_URL}/books/${bookId}/track`, {
-                method: 'DELETE',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Accept': 'application/json'
-                }
-              });
-              if (res.ok) {
-                delete trackedIds[bookId];
-                renderTracker(wrapper, bookId, null);
-              }
+              await apiClient.delete(`/books/${bookId}/track`);
+              delete trackedIds[bookId];
+              renderTracker(wrapper, bookId, null);
             } catch (err) {
               console.error(err);
             }
           } else {
             const method = trackedIds[bookId] ? 'PATCH' : 'POST';
             try {
-              const res = await fetch(`${API_BASE_URL}/books/${bookId}/track`, {
+              await apiClient.request(`/books/${bookId}/track`, {
                 method,
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                  'Accept': 'application/json'
-                },
-                body: JSON.stringify({ status: action })
+                body: { status: action }
               });
-              if (res.ok) {
-                trackedIds[bookId] = action;
-                renderTracker(wrapper, bookId, action);
-              }
+              trackedIds[bookId] = action;
+              renderTracker(wrapper, bookId, action);
             } catch (err) {
               console.error(err);
             }
@@ -338,14 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/notifications`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
-      });
-      if (!response.ok) return;
-      const notifications = await response.json();
+      const notifications = await apiClient.get('/notifications');
       if (!notifications || notifications.length === 0) return;
 
       // Find first non-dismissed notification
@@ -361,8 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showNotificationBanner(notif) {
-    const isSubdirectory = window.location.pathname.includes('/books/') || window.location.pathname.includes('/series/');
-    const prefix = isSubdirectory ? '../' : '';
+    const prefix = window.navUtils ? window.navUtils.getPathPrefix() : '';
 
     const banner = document.createElement('div');
     banner.className = 'global-notification-banner';
@@ -437,43 +328,109 @@ document.addEventListener('DOMContentLoaded', () => {
 // Global API Helper Functions
 const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'http://127.0.0.1:8000/api';
 
+/**
+ * Opens secure PDF reader view for a specific book.
+ * @param {number} bookId - Book ID
+ */
 window.readBook = function(bookId) {
   const token = localStorage.getItem('auth_token');
+  const prefix = window.navUtils ? window.navUtils.getPathPrefix() : '';
   if (!token) {
-    const isSubdirectory = window.location.pathname.includes('/books/') || window.location.pathname.includes('/series/');
-    const prefix = isSubdirectory ? '../' : '';
-    window.location.href = prefix + 'auth.html?redirect=' + encodeURIComponent(window.location.pathname);
+    window.location.href = window.navUtils ? window.navUtils.getAuthRedirectUrl() : `${prefix}auth.html?redirect=${encodeURIComponent(window.location.pathname)}`;
     return;
   }
 
-  const isSubdirectory = window.location.pathname.includes('/books/') || window.location.pathname.includes('/series/');
-  const prefix = isSubdirectory ? '../' : '';
-  window.open(prefix + 'books/pdf-viewer.html?bookId=' + bookId, '_blank');
+  window.open(`${prefix}books/pdf-viewer.html?bookId=${bookId}`, '_blank');
 };
 
+let progressTimeout = null;
+let lastPendingProgress = null;
+
+/**
+ * Updates reading progress with debounce and page unload keepalive support.
+ * @param {number} bookId - Book ID
+ * @param {number} page - Current page number
+ * @param {number} percentage - Reading progress percentage (0 - 100)
+ * @param {boolean} [syncImmediately=false] - Whether to sync immediately without debounce
+ * @returns {Promise<void>}
+ */
 window.updateReadingProgress = async function(bookId, page, percentage, syncImmediately = false) {
   const token = localStorage.getItem('auth_token');
   if (!token) return;
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/books/${bookId}/progress`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        last_read_page: page,
-        progress_percentage: percentage,
-        sync_immediately: syncImmediately
-      })
-    });
+  lastPendingProgress = { bookId, page, percentage };
 
-    const data = await response.json();
-    console.log('Reading progress synced:', data);
-  } catch (error) {
-    console.error('Failed to sync progress:', error);
+  if (progressTimeout) {
+    clearTimeout(progressTimeout);
+    progressTimeout = null;
+  }
+
+  const sendProgress = async (isKeepAlive = false) => {
+    if (!lastPendingProgress) return;
+    const { bookId: bId, page: p, percentage: pct } = lastPendingProgress;
+    lastPendingProgress = null;
+
+    try {
+      if (isKeepAlive) {
+        const baseUrl = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL ? window.APP_CONFIG.API_BASE_URL : 'http://127.0.0.1:8000/api';
+        fetch(`${baseUrl}/books/${bId}/progress`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            last_read_page: p,
+            progress_percentage: pct,
+            sync_immediately: true
+          }),
+          keepalive: true
+        });
+      } else {
+        const data = await apiClient.post(`/books/${bId}/progress`, {
+          last_read_page: p,
+          progress_percentage: pct,
+          sync_immediately: syncImmediately
+        });
+        console.log('Reading progress synced:', data);
+      }
+    } catch (error) {
+      console.error('Failed to sync progress:', error);
+    }
+  };
+
+  if (syncImmediately) {
+    await sendProgress(false);
+  } else {
+    // 4 seconds debounce (3 to 5 seconds range)
+    progressTimeout = setTimeout(() => {
+      sendProgress(false);
+    }, 4000);
   }
 };
+
+window.addEventListener('beforeunload', () => {
+  if (lastPendingProgress) {
+    const { bookId: bId, page: p, percentage: pct } = lastPendingProgress;
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      const baseUrl = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL ? window.APP_CONFIG.API_BASE_URL : 'http://127.0.0.1:8000/api';
+      fetch(`${baseUrl}/books/${bId}/progress`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          last_read_page: p,
+          progress_percentage: pct,
+          sync_immediately: true
+        }),
+        keepalive: true
+      });
+    }
+  }
+});
 

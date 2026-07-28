@@ -1,0 +1,67 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, sqlite3, pdo_sqlite, redis
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Frontend Dependencies
+        run: npm install
+
+      - name: Run Frontend Tests
+        run: npm test
+
+      - name: Run Frontend Build
+        run: npm run build
+
+      - name: Install PHP Dependencies
+        working-directory: ./api
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Copy Environment File
+        working-directory: ./api
+        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+
+      - name: Generate Application Key
+        working-directory: ./api
+        run: php artisan key:generate
+
+      - name: Run Database Migrations & Seeders
+        working-directory: ./api
+        run: php artisan migrate --force
+
+      - name: Run PHP Code Style (Pint) Check
+        working-directory: ./api
+        run: vendor/bin/pint --test
+
+      - name: Run PHPUnit Tests
+        working-directory: ./api
+        run: php artisan test

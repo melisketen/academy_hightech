@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class Book extends Model
 {
@@ -26,11 +27,11 @@ class Book extends Model
     protected static function booted(): void
     {
         static::saved(function ($book) {
-            \Illuminate\Support\Facades\Cache::forget('books:recently_updated');
+            Cache::forget('books:recently_updated');
         });
 
         static::deleted(function ($book) {
-            \Illuminate\Support\Facades\Cache::forget('books:recently_updated');
+            Cache::forget('books:recently_updated');
         });
     }
 
@@ -42,8 +43,8 @@ class Book extends Model
     public function users()
     {
         return $this->belongsToMany(User::class, 'reading_progress')
-                    ->withPivot('last_read_page', 'progress_percentage')
-                    ->withTimestamps();
+            ->withPivot('last_read_page', 'progress_percentage')
+            ->withTimestamps();
     }
 
     public function favoritedBy()

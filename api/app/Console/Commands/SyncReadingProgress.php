@@ -34,6 +34,7 @@ class SyncReadingProgress extends Command
 
         if (empty($dirtyKeys)) {
             $this->info('No dirty progress records to sync.');
+
             return 0;
         }
 
@@ -58,8 +59,8 @@ class SyncReadingProgress extends Command
                         'book_id' => $bookId,
                     ],
                     [
-                        'last_read_page' => (int)$page,
-                        'progress_percentage' => (float)$percentage,
+                        'last_read_page' => (int) $page,
+                        'progress_percentage' => (float) $percentage,
                     ]
                 );
 
@@ -71,6 +72,7 @@ class SyncReadingProgress extends Command
         }
 
         $this->info("Successfully synchronized {$count} reading progress record(s).");
+
         return 0;
     }
 }

@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateProgressRequest;
 use App\Jobs\ApplyWatermarkJob;
 use App\Models\Book;
 use App\Models\ReadingProgress;
 use App\Services\PdfWatermarkService;
-use App\Http\Requests\UpdateProgressRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
@@ -17,21 +18,40 @@ class BookController extends Controller
     /**
      * Get newest books (paginated).
      */
-    public function new()
+    public function new(Request $request)
     {
-        $books = Book::orderBy('published_at', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
-            
+        $page = $request->get('page', 1);
+        try {
+            $books = Cache::remember("books:new:page:{$page}", 3600, function () {
+                return Book::orderBy('published_at', 'desc')
+                    ->orderBy('created_at', 'desc')
+                    ->paginate(15);
+            });
+        } catch (\Throwable $e) {
+            Log::warning('BookController::new: Cache unavailable, falling back to DB.', ['error' => $e->getMessage()]);
+            $books = Book::orderBy('published_at', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->paginate(15);
+        }
+
         return response()->json($books);
     }
 
     /**
      * Get popular books based on popularity score.
      */
-    public function popular()
+    public function popular(Request $request)
     {
-        $books = Book::orderBy('popularity_score', 'desc')->paginate(15);
+        $page = $request->get('page', 1);
+        try {
+            $books = Cache::remember("books:popular:page:{$page}", 3600, function () {
+                return Book::orderBy('popularity_score', 'desc')->paginate(15);
+            });
+        } catch (\Throwable $e) {
+            Log::warning('BookController::popular: Cache unavailable, falling back to DB.', ['error' => $e->getMessage()]);
+            $books = Book::orderBy('popularity_score', 'desc')->paginate(15);
+        }
+
         return response()->json($books);
     }
 
@@ -41,7 +61,7 @@ class BookController extends Controller
     public function myReads(Request $request)
     {
         $user = $request->user();
-        
+
         $reads = ReadingProgress::with('book')
             ->where('user_id', $user->id)
             ->orderBy('updated_at', 'desc')
@@ -57,11 +77,12 @@ class BookController extends Controller
                 $cachedPercentage = Redis::get("user:{$user->id}:book:{$item->book_id}:percentage");
 
                 if ($cachedPage !== null) {
-                    $item->last_read_page = (int)$cachedPage;
+                    $item->last_read_page = (int) $cachedPage;
                 }
                 if ($cachedPercentage !== null) {
-                    $item->progress_percentage = (float)$cachedPercentage;
+                    $item->progress_percentage = (float) $cachedPercentage;
                 }
+
                 return $item;
             });
         } catch (\Throwable $e) {
@@ -79,13 +100,28 @@ class BookController extends Controller
     public function search(Request $request)
     {
         $query = $request->query('q', '');
+        $page = $request->get('page', 1);
+        $cacheKey = 'books:search:'.md5($query).":page:{$page}";
 
-        if (trim($query) === '') {
-            $books = Book::orderBy('popularity_score', 'desc')->paginate(15);
-        } else {
-            $books = Book::where('title', 'like', "%{$query}%")
-                ->orWhere('author', 'like', "%{$query}%")
-                ->paginate(15);
+        try {
+            $books = Cache::remember($cacheKey, 1800, function () use ($query) {
+                if (trim($query) === '') {
+                    return Book::orderBy('popularity_score', 'desc')->paginate(15);
+                } else {
+                    return Book::where('title', 'like', "%{$query}%")
+                        ->orWhere('author', 'like', "%{$query}%")
+                        ->paginate(15);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::warning('BookController::search: Cache unavailable, falling back to DB.', ['error' => $e->getMessage()]);
+            if (trim($query) === '') {
+                $books = Book::orderBy('popularity_score', 'desc')->paginate(15);
+            } else {
+                $books = Book::where('title', 'like', "%{$query}%")
+                    ->orWhere('author', 'like', "%{$query}%")
+                    ->paginate(15);
+            }
         }
 
         return response()->json($books);
@@ -111,10 +147,10 @@ class BookController extends Controller
         $user = $request->user();
 
         // Security check: Must have standard or premium subscription
-        if (!in_array($user->subscription_status, ['standard', 'premium'])) {
+        if (! in_array($user->subscription_status, ['standard', 'premium'])) {
             return response()->json([
-                'error'   => 'Unauthorized',
-                'message' => 'Active subscription (Standard or Premium) is required to stream books.'
+                'error' => 'Unauthorized',
+                'message' => 'Active subscription (Standard or Premium) is required to stream books.',
             ], 403);
         }
 
@@ -122,14 +158,14 @@ class BookController extends Controller
 
         // Standard users: enforce series restriction
         if ($user->subscription_status === 'standard') {
-            $profileInfo    = $user->profile_info ?? [];
-            $allowedSeries  = $profileInfo['allowed_series'] ?? null;
+            $profileInfo = $user->profile_info ?? [];
+            $allowedSeries = $profileInfo['allowed_series'] ?? null;
 
             // If a series restriction is set and the book's category doesn't match, deny access
-            if ($allowedSeries !== null && (string)$book->category_id !== (string)$allowedSeries) {
+            if ($allowedSeries !== null && (string) $book->category_id !== (string) $allowedSeries) {
                 return response()->json([
-                    'error'   => 'Access Denied',
-                    'message' => 'Your Standard plan only covers one book series. Upgrade to Premium for unlimited access, or change your allowed series in your profile.'
+                    'error' => 'Access Denied',
+                    'message' => 'Your Standard plan only covers one book series. Upgrade to Premium for unlimited access, or change your allowed series in your profile.',
                 ], 403);
             }
         }
@@ -138,31 +174,31 @@ class BookController extends Controller
         $book->increment('popularity_score');
 
         $cachePath = "private/watermarked_cache/{$user->id}_{$book->id}.pdf";
-        $absoluteCachePath = storage_path('app/' . $cachePath);
+        $absoluteCachePath = storage_path('app/'.$cachePath);
 
         // 1. Stream from cache if it already exists
         if (file_exists($absoluteCachePath)) {
             return response()->stream(function () use ($absoluteCachePath) {
                 $file = fopen($absoluteCachePath, 'rb');
-                while (!feof($file)) {
+                while (! feof($file)) {
                     echo fread($file, 1024 * 8); // Stream 8KB chunks
                     flush();
                 }
                 fclose($file);
             }, 200, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="secure-' . basename($book->file_path) . '"',
-                'Cache-Control' => 'no-cache, private'
+                'Content-Disposition' => 'inline; filename="secure-'.basename($book->file_path).'"',
+                'Cache-Control' => 'no-cache, private',
             ]);
         }
 
         // 2. Otherwise watermark on-the-fly and queue a job to write the cache file
-        $originalPath = storage_path('app/private/' . $book->file_path);
-        
-        if (!file_exists($originalPath)) {
+        $originalPath = storage_path('app/private/'.$book->file_path);
+
+        if (! file_exists($originalPath)) {
             return response()->json([
                 'error' => 'Not Found',
-                'message' => 'Original book file not found.'
+                'message' => 'Original book file not found.',
             ], 404);
         }
 
@@ -176,13 +212,13 @@ class BookController extends Controller
                 echo $pdfContent;
             }, 200, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="secure-' . basename($book->file_path) . '"',
-                'Cache-Control' => 'no-cache, private'
+                'Content-Disposition' => 'inline; filename="secure-'.basename($book->file_path).'"',
+                'Cache-Control' => 'no-cache, private',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Internal Server Error',
-                'message' => 'Failed to apply security watermark: ' . $e->getMessage()
+                'message' => 'Failed to apply security watermark: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -223,8 +259,8 @@ class BookController extends Controller
                     'book_id' => $book->id,
                 ],
                 [
-                    'last_read_page' => (int)$page,
-                    'progress_percentage' => (float)$percentage,
+                    'last_read_page' => (int) $page,
+                    'progress_percentage' => (float) $percentage,
                 ]
             );
 
@@ -239,9 +275,9 @@ class BookController extends Controller
 
         return response()->json([
             'message' => 'Reading progress saved successfully.',
-            'last_read_page' => (int)$page,
-            'progress_percentage' => (float)$percentage,
-            'cached' => $redisAvailable && !$syncImmediately,
+            'last_read_page' => (int) $page,
+            'progress_percentage' => (float) $percentage,
+            'cached' => $redisAvailable && ! $syncImmediately,
         ]);
     }
 
@@ -251,6 +287,7 @@ class BookController extends Controller
     public function getFavorites(Request $request)
     {
         $favorites = $request->user()->favorites()->paginate(15);
+
         return response()->json($favorites);
     }
 
@@ -274,7 +311,7 @@ class BookController extends Controller
 
         return response()->json([
             'message' => $message,
-            'favorited' => $favorited
+            'favorited' => $favorited,
         ]);
     }
 
@@ -284,7 +321,7 @@ class BookController extends Controller
     public function getSuggestedBooks(Request $request)
     {
         $user = $request->user();
-        
+
         // Find most read category
         $latestRead = ReadingProgress::where('user_id', $user->id)
             ->orderBy('updated_at', 'desc')
@@ -297,7 +334,7 @@ class BookController extends Controller
             if ($book) {
                 // Prioritize the same category but exclude already read books
                 $readBookIds = ReadingProgress::where('user_id', $user->id)->pluck('book_id')->toArray();
-                
+
                 $query->where('category_id', $book->category_id)
                     ->whereNotIn('id', $readBookIds);
             }
@@ -313,12 +350,12 @@ class BookController extends Controller
                 $readBookIds = ReadingProgress::where('user_id', $user->id)->pluck('book_id')->toArray();
                 $excludeIds = array_merge($excludeIds, $readBookIds);
             }
-            
+
             $extra = Book::whereNotIn('id', $excludeIds)
                 ->orderBy('popularity_score', 'desc')
                 ->limit(4 - $suggestions->count())
                 ->get();
-                
+
             $suggestions = $suggestions->merge($extra);
         }
 
@@ -330,10 +367,10 @@ class BookController extends Controller
      */
     public function getNotifications()
     {
-        $notifications = \Illuminate\Support\Facades\DB::table('notifications')
+        $notifications = DB::table('notifications')
             ->orderBy('created_at', 'desc')
             ->get();
-            
+
         return response()->json($notifications);
     }
 
@@ -407,9 +444,9 @@ class BookController extends Controller
             ->groupBy('reading_status');
 
         return response()->json([
-            'reading'      => $grouped->get('reading', collect())->values(),
+            'reading' => $grouped->get('reading', collect())->values(),
             'want_to_read' => $grouped->get('want_to_read', collect())->values(),
-            'finished'     => $grouped->get('finished', collect())->values(),
+            'finished' => $grouped->get('finished', collect())->values(),
         ]);
     }
 }

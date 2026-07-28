@@ -3,15 +3,19 @@
 namespace Tests\Feature;
 
 use App\Models\Book;
+use App\Models\Payment;
 use App\Models\ReadingProgress;
 use App\Models\Subscription;
 use App\Models\User;
-use App\Models\Payment;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Redis;
+use Predis\Connection\ConnectionException;
+use Predis\Connection\NodeConnectionInterface;
 use Tests\TestCase;
 
 class DigitalLibraryApiTest extends TestCase
@@ -33,11 +37,12 @@ class DigitalLibraryApiTest extends TestCase
                 'message',
                 'access_token',
                 'token_type',
-                'user' => ['id', 'email', 'subscription_status']
+                'user' => ['id', 'email', 'subscription_status'],
             ]);
 
         $this->assertDatabaseHas('users', [
             'email' => 'newuser@example.com',
+            'subscription_status' => 'standard',
         ]);
     }
 
@@ -61,7 +66,7 @@ class DigitalLibraryApiTest extends TestCase
                 'message',
                 'access_token',
                 'token_type',
-                'user'
+                'user',
             ]);
     }
 
@@ -90,6 +95,7 @@ class DigitalLibraryApiTest extends TestCase
         $capturedToken = null;
         Notification::assertSentTo($user, ResetPassword::class, function ($notification) use (&$capturedToken) {
             $capturedToken = $notification->token;
+
             return true;
         });
 
@@ -137,7 +143,7 @@ class DigitalLibraryApiTest extends TestCase
 
         // 2. Update profile
         $updateResponse = $this->actingAs($user, 'sanctum')->putJson('/api/user/profile', [
-            'profile_info' => ['name' => 'John Doe', 'bio' => 'Developer']
+            'profile_info' => ['name' => 'John Doe', 'bio' => 'Developer'],
         ]);
 
         $updateResponse->assertStatus(200)
@@ -225,7 +231,7 @@ class DigitalLibraryApiTest extends TestCase
         // Initiate subscribe session (Stripe)
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/subscriptions/subscribe', [
             'subscription_id' => $subscription->id,
-            'gateway' => 'stripe'
+            'gateway' => 'stripe',
         ]);
 
         $response->assertStatus(201)
@@ -235,16 +241,33 @@ class DigitalLibraryApiTest extends TestCase
                     'transaction_id',
                     'amount',
                     'gateway',
-                    'checkout_url'
-                ]
+                    'checkout_url',
+                ],
             ]);
 
         $this->assertDatabaseHas('payments', [
             'user_id' => $user->id,
             'amount' => 19.99,
             'gateway' => 'stripe',
-            'status' => 'pending'
+            'status' => 'pending',
         ]);
+    }
+
+    /**
+     * Test subscription upgrade to premium.
+     */
+    public function test_user_can_upgrade_subscription(): void
+    {
+        $user = User::factory()->create(['subscription_status' => 'standard']);
+
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/subscriptions/upgrade');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Successfully upgraded to Premium Plan.',
+            ]);
+
+        $this->assertEquals('premium', $user->fresh()->subscription_status);
     }
 
     /**
@@ -269,14 +292,14 @@ class DigitalLibraryApiTest extends TestCase
             'amount' => 19.99,
             'gateway' => 'stripe',
             'transaction_id' => 'stripe_test_txn_123',
-            'status' => 'pending'
+            'status' => 'pending',
         ]);
 
         $payload = [
             'gateway' => 'stripe',
             'transaction_id' => 'stripe_test_txn_123',
             'status' => 'success',
-            'subscription_name' => 'Premium'
+            'subscription_name' => 'Premium',
         ];
 
         // Send correctly-signed success webhook
@@ -287,7 +310,7 @@ class DigitalLibraryApiTest extends TestCase
 
         $this->assertDatabaseHas('payments', [
             'transaction_id' => 'stripe_test_txn_123',
-            'status' => 'success'
+            'status' => 'success',
         ]);
 
         $user->refresh();
@@ -305,21 +328,21 @@ class DigitalLibraryApiTest extends TestCase
             'amount' => 19.99,
             'gateway' => 'stripe',
             'transaction_id' => 'stripe_unsigned_txn',
-            'status' => 'pending'
+            'status' => 'pending',
         ]);
 
         $response = $this->postJson('/api/webhooks/payment', [
             'gateway' => 'stripe',
             'transaction_id' => 'stripe_unsigned_txn',
             'status' => 'success',
-            'subscription_name' => 'Premium'
+            'subscription_name' => 'Premium',
         ]);
 
         $response->assertStatus(401);
 
         $this->assertDatabaseHas('payments', [
             'transaction_id' => 'stripe_unsigned_txn',
-            'status' => 'pending' // unchanged — spoofed request never reached PaymentService
+            'status' => 'pending', // unchanged — spoofed request never reached PaymentService
         ]);
 
         $user->refresh();
@@ -337,14 +360,14 @@ class DigitalLibraryApiTest extends TestCase
             'amount' => 19.99,
             'gateway' => 'stripe',
             'transaction_id' => 'stripe_forged_txn',
-            'status' => 'pending'
+            'status' => 'pending',
         ]);
 
         $response = $this->postJson('/api/webhooks/payment', [
             'gateway' => 'stripe',
             'transaction_id' => 'stripe_forged_txn',
             'status' => 'success',
-            'subscription_name' => 'Premium'
+            'subscription_name' => 'Premium',
         ], ['X-Webhook-Signature' => 'not-the-real-signature']);
 
         $response->assertStatus(401);
@@ -365,7 +388,7 @@ class DigitalLibraryApiTest extends TestCase
             'category_id' => 1,
             'file_path' => 'books/design-patterns.pdf',
             'popularity_score' => 150,
-            'published_at' => now()->subDays(2)
+            'published_at' => now()->subDays(2),
         ]);
 
         Book::create([
@@ -374,7 +397,7 @@ class DigitalLibraryApiTest extends TestCase
             'category_id' => 1,
             'file_path' => 'books/refactoring.pdf',
             'popularity_score' => 80,
-            'published_at' => now()
+            'published_at' => now(),
         ]);
 
         // Get newest books
@@ -395,13 +418,40 @@ class DigitalLibraryApiTest extends TestCase
     }
 
     /**
+     * Test book discovery caching.
+     */
+    public function test_book_discovery_caching(): void
+    {
+        $user = User::factory()->create();
+        Book::create([
+            'title' => 'Cached Book',
+            'author' => 'Author',
+            'category_id' => 1,
+            'file_path' => 'books/cached.pdf',
+            'published_at' => now(),
+        ]);
+
+        Cache::flush();
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/books/new')
+            ->assertStatus(200);
+
+        $this->assertTrue(Cache::has('books:new:page:1'));
+
+        // Test fallback/cache hit
+        $this->actingAs($user, 'sanctum')->getJson('/api/books/new')
+            ->assertStatus(200)
+            ->assertJsonPath('data.0.title', 'Cached Book');
+    }
+
+    /**
      * Test secure streaming with watermark.
      */
     public function test_secure_book_streaming(): void
     {
         // 1. Create user with free subscription (stream should fail)
         $freeUser = User::factory()->create(['subscription_status' => 'free']);
-        
+
         $book = Book::create([
             'title' => 'Test Secure Book',
             'author' => 'Author',
@@ -417,15 +467,43 @@ class DigitalLibraryApiTest extends TestCase
         // 2. Premium user (stream should succeed)
         $premiumUser = User::factory()->create([
             'email' => 'premium@example.com',
-            'subscription_status' => 'premium'
+            'subscription_status' => 'premium',
         ]);
 
         $response = $this->actingAs($premiumUser, 'sanctum')
-            ->get('/api/books/' . $book->id . '/stream');
+            ->get('/api/books/'.$book->id.'/stream');
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/pdf');
         $response->assertHeader('Cache-Control', 'no-cache, private');
+    }
+
+    /**
+     * Test PDF watermarking memory efficiency & profiling.
+     */
+    public function test_pdf_watermarking_memory_efficiency(): void
+    {
+        $service = new \App\Services\PdfWatermarkService();
+        $samplePdfPath = storage_path('app/private/books/test-book.pdf');
+
+        if (!file_exists($samplePdfPath)) {
+            if (!file_exists(dirname($samplePdfPath))) {
+                mkdir(dirname($samplePdfPath), 0755, true);
+            }
+            $pdf = new \fpdf\FPDF();
+            $pdf->AddPage();
+            $pdf->SetFont('Arial', 'B', 16);
+            $pdf->Cell(40, 10, 'Test PDF Document');
+            $pdf->Output('F', $samplePdfPath);
+        }
+
+        $startMemory = memory_get_usage(true);
+        $result = $service->watermark($samplePdfPath, 'audit@example.com');
+        $peakMemory = memory_get_peak_usage(true);
+
+        $this->assertNotEmpty($result);
+        $memoryDiffMb = ($peakMemory - $startMemory) / 1024 / 1024;
+        $this->assertLessThan(64, $memoryDiffMb, "PDF watermarking consumed too much memory: {$memoryDiffMb}MB");
     }
 
     /**
@@ -467,7 +545,7 @@ class DigitalLibraryApiTest extends TestCase
                 'message' => 'Reading progress saved successfully.',
                 'last_read_page' => 12,
                 'progress_percentage' => 24.5,
-                'cached' => true
+                'cached' => true,
             ]);
     }
 
@@ -487,8 +565,8 @@ class DigitalLibraryApiTest extends TestCase
 
         Redis::shouldReceive('set')
             ->once()
-            ->andThrow(new \Predis\Connection\ConnectionException(
-                \Mockery::mock(\Predis\Connection\NodeConnectionInterface::class),
+            ->andThrow(new ConnectionException(
+                \Mockery::mock(NodeConnectionInterface::class),
                 'Connection refused'
             ));
 
@@ -532,8 +610,8 @@ class DigitalLibraryApiTest extends TestCase
         ]);
 
         Redis::shouldReceive('get')
-            ->andThrow(new \Predis\Connection\ConnectionException(
-                \Mockery::mock(\Predis\Connection\NodeConnectionInterface::class),
+            ->andThrow(new ConnectionException(
+                \Mockery::mock(NodeConnectionInterface::class),
                 'Connection refused'
             ));
 
@@ -618,11 +696,11 @@ class DigitalLibraryApiTest extends TestCase
         $user = User::factory()->create();
         for ($i = 1; $i <= 5; $i++) {
             Book::create([
-                'title' => 'Book ' . $i,
+                'title' => 'Book '.$i,
                 'author' => 'Author',
                 'category_id' => 1,
-                'file_path' => 'books/book' . $i . '.pdf',
-                'popularity_score' => $i * 10
+                'file_path' => 'books/book'.$i.'.pdf',
+                'popularity_score' => $i * 10,
             ]);
         }
 
@@ -637,7 +715,7 @@ class DigitalLibraryApiTest extends TestCase
     public function test_user_can_get_notifications(): void
     {
         $user = User::factory()->create();
-        \Illuminate\Support\Facades\DB::table('notifications')->insert([
+        DB::table('notifications')->insert([
             'title' => 'Announce',
             'message' => 'New release',
             'type' => 'info',
@@ -662,7 +740,7 @@ class DigitalLibraryApiTest extends TestCase
             'amount' => 9.99,
             'gateway' => 'stripe',
             'transaction_id' => 'tx_123',
-            'status' => 'success'
+            'status' => 'success',
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/user/payments');

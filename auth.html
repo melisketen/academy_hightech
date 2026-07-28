@@ -15,6 +15,10 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/pages.css">
   <script src="js/config.js"></script>
+  <script src="js/apiClient.js"></script>
+  <script src="js/utils/navigation.js"></script>
+  <script src="js/utils/scroll.js"></script>
+  <script src="js/components/bookCard.js"></script>
 
   <style>
     body {
@@ -244,7 +248,7 @@
       </form>
 
       <div class="auth-back-link">
-        <a href="#" onclick="showView('login-register'); return false;">â† Back to Sign In</a>
+        <a href="#" onclick="showView('login-register'); return false;">&larr; Back to Sign In</a>
       </div>
     </div>
 
@@ -272,7 +276,7 @@
       </form>
 
       <div class="auth-back-link">
-        <a href="#" onclick="showView('login-register'); return false;">â† Back to Sign In</a>
+        <a href="#" onclick="showView('login-register'); return false;">&larr; Back to Sign In</a>
       </div>
     </div>
   </div>
@@ -348,28 +352,10 @@
         : { email, password, name };
 
       try {
-        const response = await fetch(API_URL + endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(body)
-        });
+        await apiClient.ensureCsrfToken();
+        const data = await apiClient.post(endpoint, body);
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          // Handle Laravel validation errors (422) which have a nested errors object
-          if (data.errors) {
-            const firstError = Object.values(data.errors)[0];
-            throw new Error(Array.isArray(firstError) ? firstError[0] : firstError);
-          }
-          throw new Error(data.message || 'An error occurred during authentication.');
-        }
-
-        // Save token and user data to LocalStorage
-        localStorage.setItem('auth_token', data.access_token);
+        // Save user data to LocalStorage (session cookie handles authentication)
         localStorage.setItem('user', JSON.stringify(data.user));
 
         // Get redirect parameter or default to homepage
@@ -401,17 +387,7 @@
       btnText.textContent = 'Sending...';
 
       try {
-        const response = await fetch(API_URL + '/auth/forgot-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ email })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Something went wrong. Please try again.');
-        }
+        const data = await apiClient.post('/auth/forgot-password', { email });
 
         successBox.textContent = data.message;
         successBox.style.display = 'block';
@@ -449,22 +425,12 @@
       btnText.textContent = 'Resetting...';
 
       try {
-        const response = await fetch(API_URL + '/auth/reset-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({
-            email: resetEmail,
-            token: resetToken,
-            password: password,
-            password_confirmation: passwordConfirm
-          })
+        const data = await apiClient.post('/auth/reset-password', {
+          email: resetEmail,
+          token: resetToken,
+          password: password,
+          password_confirmation: passwordConfirm
         });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || 'This reset link is invalid or has expired.');
-        }
 
         successBox.textContent = data.message;
         successBox.style.display = 'block';

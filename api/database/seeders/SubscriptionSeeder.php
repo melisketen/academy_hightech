@@ -17,7 +17,7 @@ class SubscriptionSeeder extends Seeder
                     'access_books' => true,
                     'watermark' => true,
                     'offline_reading' => false,
-                ])
+                ]),
             ]
         );
 
@@ -30,7 +30,7 @@ class SubscriptionSeeder extends Seeder
                     'watermark' => true,
                     'offline_reading' => true,
                     'priority_support' => true,
-                ])
+                ]),
             ]
         );
     }

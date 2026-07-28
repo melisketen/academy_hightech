@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -19,8 +19,10 @@ class AuthController extends Controller
         $user = User::create([
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'subscription_status' => 'free',
+            'subscription_status' => 'standard',
         ]);
+
+        auth()->login($user);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -28,7 +30,7 @@ class AuthController extends Controller
             'message' => 'User registered successfully.',
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'user' => $user
+            'user' => $user,
         ], 201);
     }
 
@@ -36,11 +38,14 @@ class AuthController extends Controller
     {
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
+
+        // For stateful requests, log user into session
+        auth()->login($user);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -48,14 +53,25 @@ class AuthController extends Controller
             'message' => 'Login successful.',
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'user' => $user
+            'user' => $user,
         ], 200);
+    }
+
+    public function logout(Request $request)
+    {
+        auth()->guard('web')->logout();
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        return response()->json(['message' => 'Logged out successfully.']);
     }
 
     public function profile(Request $request)
     {
         return response()->json([
-            'user' => $request->user()
+            'user' => $request->user(),
         ], 200);
     }
 
@@ -64,12 +80,12 @@ class AuthController extends Controller
         $user = $request->user();
 
         if ($request->has('email')) {
-            if (!Hash::check($request->input('current_password', ''), $user->password)) {
+            if (! Hash::check($request->input('current_password', ''), $user->password)) {
                 return response()->json(['message' => 'Incorrect password.'], 403);
             }
             $user->email = $request->email;
         }
-        if ($request->has('password') && !empty($request->password)) {
+        if ($request->has('password') && ! empty($request->password)) {
             $user->password = Hash::make($request->password);
         }
 
@@ -82,10 +98,10 @@ class AuthController extends Controller
         // Flat field shortcuts. is_verified and twofa_enabled are deliberately
         // excluded — see UpdateProfileRequest for why.
         foreach (['name', 'first_name', 'last_name', 'username', 'bio', 'avatar',
-                  'language', 'timezone', 'allowed_series',
-                  'notification_email_marketing', 'notification_email_activity',
-                  'notification_email_system', 'notification_push', 'notification_sms',
-                  'privacy_visibility'] as $field) {
+            'language', 'timezone', 'allowed_series',
+            'notification_email_marketing', 'notification_email_activity',
+            'notification_email_system', 'notification_push', 'notification_sms',
+            'privacy_visibility'] as $field) {
 
             if ($request->has($field)) {
                 $info[$field] = $request->input($field);
@@ -97,13 +113,14 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Profile updated successfully.',
-            'user' => $user
+            'user' => $user,
         ], 200);
     }
 
     public function payments(Request $request)
     {
         $payments = $request->user()->payments()->orderBy('created_at', 'desc')->get();
+
         return response()->json($payments);
     }
 
@@ -115,12 +132,12 @@ class AuthController extends Controller
         $user = $request->user();
         $tokens = $user->tokens()->orderBy('last_used_at', 'desc')->get();
 
-        $sessions = $tokens->map(fn($t) => [
-            'id'          => $t->id,
-            'name'        => $t->name,
-            'last_used'   => $t->last_used_at?->toDateTimeString() ?? 'Active now',
-            'created_at'  => $t->created_at->toDateTimeString(),
-            'is_current'  => $t->id === $request->user()->currentAccessToken()->id,
+        $sessions = $tokens->map(fn ($t) => [
+            'id' => $t->id,
+            'name' => $t->name,
+            'last_used' => $t->last_used_at?->toDateTimeString() ?? 'Active now',
+            'created_at' => $t->created_at->toDateTimeString(),
+            'is_current' => $t->id === $request->user()->currentAccessToken()->id,
         ]);
 
         return response()->json($sessions);
@@ -146,7 +163,7 @@ class AuthController extends Controller
         $request->validate(['password' => 'required|string']);
 
         $user = $request->user();
-        if (!Hash::check($request->password, $user->password)) {
+        if (! Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'Incorrect password.'], 403);
         }
 
@@ -165,7 +182,7 @@ class AuthController extends Controller
         $request->validate(['password' => 'required|string']);
 
         $user = $request->user();
-        if (!Hash::check($request->password, $user->password)) {
+        if (! Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'Incorrect password.'], 403);
         }
 
@@ -184,20 +201,20 @@ class AuthController extends Controller
         $readings = $user->readingProgress()->with('book')->get();
 
         $export = [
-            'exported_at'   => now()->toIso8601String(),
-            'account'       => [
-                'email'              => $user->email,
-                'subscription_status'=> $user->subscription_status,
-                'created_at'         => $user->created_at->toIso8601String(),
+            'exported_at' => now()->toIso8601String(),
+            'account' => [
+                'email' => $user->email,
+                'subscription_status' => $user->subscription_status,
+                'created_at' => $user->created_at->toIso8601String(),
             ],
-            'profile'       => $user->profile_info ?? [],
-            'payments'      => $user->payments->toArray(),
-            'favorites'     => $user->favorites->pluck('title')->toArray(),
-            'reading_history'=> $readings->map(fn($r) => [
-                'book'       => $r->book->title ?? 'Unknown',
-                'page'       => $r->last_read_page,
-                'progress'   => $r->progress_percentage,
-                'status'     => $r->reading_status,
+            'profile' => $user->profile_info ?? [],
+            'payments' => $user->payments->toArray(),
+            'favorites' => $user->favorites->pluck('title')->toArray(),
+            'reading_history' => $readings->map(fn ($r) => [
+                'book' => $r->book->title ?? 'Unknown',
+                'page' => $r->last_read_page,
+                'progress' => $r->progress_percentage,
+                'status' => $r->reading_status,
                 'updated_at' => $r->updated_at->toIso8601String(),
             ])->toArray(),
         ];

@@ -13,23 +13,23 @@ class WebhookController extends Controller
      */
     public function handlePayment(Request $request, PaymentService $paymentService)
     {
-        if (!$this->hasValidSignature($request)) {
+        if (! $this->hasValidSignature($request)) {
             Log::warning('WebhookController: Rejected webhook with missing/invalid signature.', [
                 'ip' => $request->ip(),
             ]);
 
             return response()->json([
                 'error' => 'Unauthorized',
-                'message' => 'Missing or invalid webhook signature.'
+                'message' => 'Missing or invalid webhook signature.',
             ], 401);
         }
 
         $gateway = $request->input('gateway');
 
-        if (!$gateway) {
+        if (! $gateway) {
             return response()->json([
                 'error' => 'Bad Request',
-                'message' => 'Gateway parameter is required.'
+                'message' => 'Gateway parameter is required.',
             ], 400);
         }
 
@@ -40,13 +40,13 @@ class WebhookController extends Controller
         if ($success) {
             return response()->json([
                 'status' => 'success',
-                'message' => 'Webhook received and payment status synchronized.'
+                'message' => 'Webhook received and payment status synchronized.',
             ], 200);
         }
 
         return response()->json([
             'error' => 'Unprocessable Entity',
-            'message' => 'Webhook could not be processed.'
+            'message' => 'Webhook could not be processed.',
         ], 422);
     }
 
@@ -59,21 +59,23 @@ class WebhookController extends Controller
     private function hasValidSignature(Request $request): bool
     {
         // For local simulation, bypass signature verification if app environment is local and signature header is missing
-        if (app()->environment('local') && !$request->hasHeader('X-Webhook-Signature')) {
+        if (app()->environment('local') && ! $request->hasHeader('X-Webhook-Signature')) {
             Log::info('WebhookController: Bypassing signature verification in local environment.');
+
             return true;
         }
 
         $secret = config('services.payment_webhook.secret');
 
-        if (!$secret) {
+        if (! $secret) {
             Log::error('WebhookController: PAYMENT_WEBHOOK_SECRET is not configured.');
+
             return false;
         }
 
         $signature = $request->header('X-Webhook-Signature');
 
-        if (!$signature) {
+        if (! $signature) {
             return false;
         }
 

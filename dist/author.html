@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Author &amp; bookMaker — Academy High Tech</title>
+  <meta name="description" content="Prof. Dr. İsmail KIRBAŞ, professor of Computer Engineering, creator of bookMaker, the open-source compilation pipeline.">
+  <meta name="theme-color" content="#0F172A">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  
+  <script src="js/config.js"></script>
+  <script src="js/apiClient.js"></script>
+  <script src="js/utils/navigation.js"></script>
+  <script src="js/utils/scroll.js"></script>
+  <script src="js/components/bookCard.js"></script>
+  <script src="js/app.js" defer></script>
+  <script src="js/pipeline-sim.js" defer></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-CRjB44YJ.css">
+  <link rel="stylesheet" crossorigin href="/assets/pages-CSU-YOTZ.css">
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <a href="index.html" class="logo" aria-label="Academy High Tech">
+    <span>academy<span class="slash">/</span>hightech</span>
+    <span class="logo-line"></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="manifesto.html">Manifesto</a></li>
+    <li><a href="index.html#series">Series</a></li>
+    <li><a href="books/git-for-teams.html">First title</a></li>
+    <li><a href="author.html" class="active">Author</a></li>
+    <li><a href="https://academyhightech.com.tr" class="lang-switch">TR ↗</a></li>
+  </ul>
+</nav>
+
+<main class="container" style="padding-top: 8rem; padding-bottom: 5rem;">
+  <!-- Author Profile Row -->
+  <section class="author-grid reveal in">
+    <div>
+      <span class="section-label" style="margin-bottom: 2rem; display:inline-block;">The Author</span>
+      <h2 class="author-name">Prof. Dr.<br>İsmail <em>KIRBAŞ</em></h2>
+      <div class="author-title">Computer Engineering · MAKÜ · Burdur, TR</div>
+    </div>
+    <div class="author-body">
+      <p>Professor of Computer Engineering at <strong>Mehmet Akif Ersoy University (MAKÜ)</strong>. Researcher specializing in machine learning, Internet of Things (IoT) architectures, sensor networks, and applied signal processing. Has spent the last twenty years instructing the technical foundations that separate engineering from improvisation.</p>
+      <p>Creator of <strong>bookMaker</strong>, the open-source pipeline that compiles every Academy High Tech title. Designed as an LLM-orchestrated publishing manager with automated code testing gates, SemVer tagging rules, and link checking routines. Open source and MIT-licensed: <a href="https://github.com/bmdersleri/bookMaker" target="_blank" rel="noopener">github.com/bmdersleri/bookMaker</a>.</p>
+      <p>Academy High Tech represents a publishing experiment built on top of that compiler—bringing modern software engineering rules, tag tagging, and errata issue boards to the technical book publishing universe.</p>
+      
+      <ul class="author-links">
+        <li><a href="https://kirbas.com" target="_blank" rel="noopener">kirbas.com</a></li>
+        <li><a href="https://github.com/bmdersleri" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://orcid.org/0000-0002-1206-8294" target="_blank" rel="noopener">ORCID Log</a></li>
+        <li><a href="https://academyhightech.com.tr" target="_blank" rel="noopener">academyhightech.com.tr</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- bookMaker Pipeline Deep Dive Section -->
+  <section class="pipeline-demo-section reveal in">
+    <div style="border-bottom: 1px solid var(--slate-200); padding-bottom: 1.5rem; margin-bottom: 2rem;">
+      <span class="aside-label" style="color: var(--teal-deep); margin-bottom: 0.5rem; display: block;">The Engine</span>
+      <h3>How bookMaker Builds Books</h3>
+      <p style="color: var(--slate); font-size: 0.95rem;">An automated, six-stage compilation workflow that validates examples, checks reference anchors, and formats print targets.</p>
+    </div>
+
+    <div class="pipeline-demo-grid">
+      <!-- Interactive Steps Selector -->
+      <div class="pipeline-flow">
+        <div class="pipeline-step active" data-step="1">
+          <span class="pipeline-step-num">1</span>
+          <span class="pipeline-step-title">Stage 1: Markdown Structuring</span>
+        </div>
+        <div class="pipeline-step" data-step="2">
+          <span class="pipeline-step-num">2</span>
+          <span class="pipeline-step-title">Stage 2: Code block compiler validations</span>
+        </div>
+        <div class="pipeline-step" data-step="3">
+          <span class="pipeline-step-num">3</span>
+          <span class="pipeline-step-title">Stage 3: Linting &amp; Link checking</span>
+        </div>
+        <div class="pipeline-step" data-step="4">
+          <span class="pipeline-step-num">4</span>
+          <span class="pipeline-step-title">Stage 4: LaTeX typeset compilation</span>
+        </div>
+        <div class="pipeline-step" data-step="5">
+          <span class="pipeline-step-num">5</span>
+          <span class="pipeline-step-title">Stage 5: Format Packaging (PDF/EPUB)</span>
+        </div>
+        <div class="pipeline-step" data-step="6">
+          <span class="pipeline-step-num">6</span>
+          <span class="pipeline-step-title">Stage 6: Tag release updates</span>
+        </div>
+      </div>
+
+      <!-- Detail Box and Console -->
+      <div style="background: #FFFFFF; border: 1px solid var(--slate-200); border-radius: var(--border-radius); padding: 2rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 2rem;">
+        <div>
+          <h4 id="pipeline-details-title" style="font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--navy); margin-bottom: 0.75rem;">
+            Stage 1: Markdown Structuring &amp; Frontmatter Parsing
+          </h4>
+          <div id="pipeline-details-body" style="font-size: 0.95rem; color: var(--slate); line-height: 1.6;">
+            <p>The pipeline parses semantic book structures from Markdown files. It validates frontmatter schemas (e.g. authors, versions, and dependencies), processes header hierarchies, and indexes cross-references automatically.</p>
+            <p>This guarantees that page outlines remain logically consistent and no internal hyperlinks are broken.</p>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--slate-200); padding-top: 1.5rem;">
+          <h5 style="font-family: var(--mono); font-size: 0.75rem; color: var(--slate); text-transform: uppercase; margin-bottom: 1rem;">
+            Pipeline Testing Console
+          </h5>
+          <div style="background: var(--navy-deep); border-radius: 4px; padding: 1rem; min-height: 150px; max-height: 220px; overflow-y: auto; font-family: var(--mono); font-size: 0.8rem; color: #FFFFFF; line-height: 1.4; margin-bottom: 1rem;" id="pipeline-demo-console">
+            <span style="color: var(--slate-light);">> Click the button below to execute compiler test checks...</span>
+          </div>
+          <button class="btn-primary" id="run-pipeline-demo" style="padding: 0.6rem 1.2rem; font-size: 0.85rem; width: 100%; justify-content: center;">
+            Run bookMaker Demo
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="container">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="index.html" class="logo">
+        <span>academy<span class="slash">/</span>hightech</span>
+        <span class="logo-line"></span>
+      </a>
+      <p style="margin-top: 1rem;">An independent imprint by Prof. Dr. İsmail KIRBAŞ. Technical books, built like software.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Books</h4>
+      <ul>
+        <li><a href="books/git-for-teams.html">Git for Teams</a></li>
+        <li><a href="index.html#series">Developer Series</a></li>
+        <li><a href="index.html#series">Academic Series</a></li>
+        <li><a href="index.html#series">AI &amp; Data Series</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Imprint</h4>
+      <ul>
+        <li><a href="manifesto.html">Manifesto</a></li>
+        <li><a href="author.html">The Author</a></li>
+        <li><a href="https://github.com/bmdersleri/bookMaker" target="_blank" rel="noopener">bookMaker (OSS)</a></li>
+        <li><a href="mailto:info@academyhightech.com">Contact</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Elsewhere</h4>
+      <ul>
+        <li><a href="https://academyhightech.com.tr" target="_blank" rel="noopener">Türkçe (.com.tr)</a></li>
+        <li><a href="https://kirbas.com" target="_blank" rel="noopener">kirbas.com</a></li>
+        <li><a href="https://github.com/academyhightech" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://linkedin.com" target="_blank" rel="noopener">LinkedIn</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>© 2026 Academy High Tech · All rights reserved</div>
+    <div>Built with <a href="https://github.com/bmdersleri/bookMaker" target="_blank" rel="noopener">bookMaker</a> · MIT licensed pipeline</div>
+  </div>
+</footer>
+
+</body>
+</html>

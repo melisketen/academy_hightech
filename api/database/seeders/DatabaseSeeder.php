@@ -2,10 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use App\Models\Book;
+use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
@@ -28,7 +29,7 @@ class DatabaseSeeder extends Seeder
                 'username' => 'adminuser',
                 'avatar' => null,
                 'is_verified' => true,
-            ]
+            ],
         ]);
 
         User::factory()->create([
@@ -41,7 +42,7 @@ class DatabaseSeeder extends Seeder
                 'username' => 'testuser',
                 'avatar' => null,
                 'is_verified' => true,
-            ]
+            ],
         ]);
 
         // Developer Series (Category ID 1)
@@ -147,7 +148,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Seed notifications
-        \Illuminate\Support\Facades\DB::table('notifications')->insert([
+        DB::table('notifications')->insert([
             [
                 'title' => 'New Release!',
                 'message' => 'Agentic AI for Engineers has been published! Read the latest on AI agents.',
@@ -165,7 +166,7 @@ class DatabaseSeeder extends Seeder
                 'version' => '1.0.2',
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
+            ],
         ]);
     }
 }

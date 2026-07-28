@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::table('reading_progress', function (Blueprint $table) {
             $table->string('reading_status')->default('reading')
-                  ->comment('want_to_read | reading | finished')
-                  ->after('progress_percentage');
+                ->comment('want_to_read | reading | finished')
+                ->after('progress_percentage');
         });
 
         Schema::table('users', function (Blueprint $table) {

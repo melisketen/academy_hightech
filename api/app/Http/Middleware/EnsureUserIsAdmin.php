@@ -13,10 +13,10 @@ class EnsureUserIsAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->user() || !$request->user()->is_admin) {
+        if (! $request->user() || ! $request->user()->is_admin) {
             return response()->json([
                 'error' => 'Forbidden',
-                'message' => 'Access denied. Administrator privileges required.'
+                'message' => 'Access denied. Administrator privileges required.',
             ], 403);
         }
 

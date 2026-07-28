@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Payment;
 use App\Models\ReadingProgress;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
@@ -33,6 +33,7 @@ class AdminController extends Controller
     public function users(Request $request)
     {
         $users = User::orderBy('id', 'desc')->get();
+
         return response()->json($users);
     }
 
@@ -47,17 +48,17 @@ class AdminController extends Controller
         if ($request->user()->id === $user->id) {
             return response()->json([
                 'error' => 'Bad Request',
-                'message' => 'You cannot deactivate your own administrator account.'
+                'message' => 'You cannot deactivate your own administrator account.',
             ], 400);
         }
 
         $user->update([
-            'is_deactivated' => !$user->is_deactivated
+            'is_deactivated' => ! $user->is_deactivated,
         ]);
 
         return response()->json([
             'message' => $user->is_deactivated ? 'User deactivated.' : 'User reactivated.',
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
@@ -67,17 +68,17 @@ class AdminController extends Controller
     public function updateSubscription(Request $request, $id)
     {
         $request->validate([
-            'subscription_status' => 'required|string|in:free,standard,premium'
+            'subscription_status' => 'required|string|in:free,standard,premium',
         ]);
 
         $user = User::findOrFail($id);
         $user->update([
-            'subscription_status' => strtolower($request->subscription_status)
+            'subscription_status' => strtolower($request->subscription_status),
         ]);
 
         return response()->json([
             'message' => 'User subscription status updated.',
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
