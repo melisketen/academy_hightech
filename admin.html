@@ -16,10 +16,10 @@
   <link rel="stylesheet" href="css/pages.css">
   
   <script src="js/config.js"></script>
-  <script src="js/apiClient.js"></script>
-  <script src="js/utils/navigation.js"></script>
-  <script src="js/utils/scroll.js"></script>
-  <script src="js/components/bookCard.js"></script>
+  <script src="js/apiClient.js" defer></script>
+  <script src="js/utils/navigation.js" defer></script>
+  <script src="js/utils/scroll.js" defer></script>
+  <script src="js/components/bookCard.js" defer></script>
   <script src="js/app.js" defer></script>
   
   <style>
@@ -334,7 +334,6 @@
 </div>
 
 <script>
-  const API = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'http://localhost/api/public/api';
   let usersData = [];
 
   // Protect Admin Route: check localStorage immediately
@@ -348,12 +347,6 @@
       window.location.href = 'index.html';
       return;
     }
-
-    window._authHeaders = {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    };
 
     // Load Data
     await loadDashboardStats();
@@ -374,9 +367,7 @@
 
   async function loadDashboardStats() {
     try {
-      const res = await fetch(`${API}/admin/stats`, { headers: window._authHeaders });
-      if (!res.ok) throw new Error('Failed to load statistics.');
-      const data = await res.json();
+      const data = await apiClient.get('/admin/stats');
 
       document.getElementById('stat-users').textContent = data.total_users;
       document.getElementById('stat-subscribers').textContent = data.active_subscribers;
@@ -389,9 +380,7 @@
 
   async function loadUsers() {
     try {
-      const res = await fetch(`${API}/admin/users`, { headers: window._authHeaders });
-      if (!res.ok) throw new Error('Failed to load users.');
-      usersData = await res.json();
+      usersData = await apiClient.get('/admin/users');
       renderUsers(usersData);
     } catch (err) {
       document.getElementById('users-tbody').innerHTML = `
@@ -454,45 +443,30 @@
 
   async function toggleDeactivate(userId) {
     try {
-      const res = await fetch(`${API}/admin/users/${userId}/toggle-deactivate`, {
-        method: 'POST',
-        headers: window._authHeaders
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Operation failed.');
-
-      alert(data.message);
+      const data = await apiClient.post(`/admin/users/${userId}/toggle-deactivate`);
+      apiClient.showToast(data.message, 'success');
       await loadUsers();
       await loadDashboardStats();
     } catch (err) {
-      alert('Error: ' + err.message);
+      // apiClient already surfaced a toast for the error.
     }
   }
 
   async function changeSubscription(userId, package) {
     try {
-      const res = await fetch(`${API}/admin/users/${userId}/subscription`, {
-        method: 'PUT',
-        headers: window._authHeaders,
-        body: JSON.stringify({ subscription_status: package })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Operation failed.');
-
-      alert('Subscription package updated successfully.');
+      await apiClient.put(`/admin/users/${userId}/subscription`, { subscription_status: package });
+      apiClient.showToast('Subscription package updated successfully.', 'success');
       await loadUsers();
       await loadDashboardStats();
     } catch (err) {
-      alert('Error: ' + err.message);
+      // apiClient already surfaced a toast for the error.
     }
   }
 
   async function loadPayments() {
     try {
-      const res = await fetch(`${API}/admin/payments`, { headers: window._authHeaders });
-      if (!res.ok) throw new Error('Failed to load payments history.');
-      const payments = await res.json();
-      
+      const payments = await apiClient.get('/admin/payments');
+
       const tbody = document.getElementById('payments-tbody');
       tbody.innerHTML = '';
 

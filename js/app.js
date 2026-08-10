@@ -372,13 +372,14 @@ window.updateReadingProgress = async function(bookId, page, percentage, syncImme
 
     try {
       if (isKeepAlive) {
-        const baseUrl = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL ? window.APP_CONFIG.API_BASE_URL : 'http://127.0.0.1:8000/api';
-        fetch(`${baseUrl}/books/${bId}/progress`, {
+        // Raw fetch (via apiClient.fetchRaw) with keepalive: true is required here —
+        // this fires from a debounce/unload path where the request must survive
+        // page teardown, which apiClient.request()'s async CSRF handshake isn't suited for.
+        apiClient.fetchRaw(`/books/${bId}/progress`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Accept': 'application/json'
           },
           body: JSON.stringify({
             last_read_page: p,
@@ -415,13 +416,11 @@ window.addEventListener('beforeunload', () => {
     const { bookId: bId, page: p, percentage: pct } = lastPendingProgress;
     const token = localStorage.getItem('auth_token');
     if (token) {
-      const baseUrl = window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL ? window.APP_CONFIG.API_BASE_URL : 'http://127.0.0.1:8000/api';
-      fetch(`${baseUrl}/books/${bId}/progress`, {
+      apiClient.fetchRaw(`/books/${bId}/progress`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           last_read_page: p,

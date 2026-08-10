@@ -14,10 +14,10 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/pages.css">
   <script src="js/config.js"></script>
-  <script src="js/apiClient.js"></script>
-  <script src="js/utils/navigation.js"></script>
-  <script src="js/utils/scroll.js"></script>
-  <script src="js/components/bookCard.js"></script>
+  <script src="js/apiClient.js" defer></script>
+  <script src="js/utils/navigation.js" defer></script>
+  <script src="js/utils/scroll.js" defer></script>
+  <script src="js/components/bookCard.js" defer></script>
   <script src="js/app.js" defer></script>
   <style>
     body {
@@ -272,13 +272,9 @@
 </div>
 
 <script>
-const API = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'http://127.0.0.1:8000/api';
-
 document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('auth_token');
   if (!token) { window.location.href = 'auth.html?redirect=library.html'; return; }
-
-  const hdrs = { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' };
 
   /* ───────────── Tab switching ───────────── */
   document.querySelectorAll('.lib-tab').forEach(btn => {
@@ -306,9 +302,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   let trackedIds = {}; // bookId → reading_status
 
   async function loadShelf() {
-    const res = await fetch(`${API}/books/my-shelf`, { headers: hdrs });
-    if (!res.ok) return;
-    const data = await res.json();
+    let data;
+    try {
+      data = await apiClient.get('/books/my-shelf');
+    } catch (err) {
+      return;
+    }
 
     trackedIds = {};
     ['reading', 'want_to_read', 'finished'].forEach(s => {
@@ -388,24 +387,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   window.track = async (bookId, status) => {
-    const method = trackedIds[bookId] ? 'PATCH' : 'POST';
-    const res = await fetch(`${API}/books/${bookId}/track`, {
-      method, headers: hdrs, body: JSON.stringify({ status })
-    });
-    if (res.ok) {
+    const method = trackedIds[bookId] ? 'patch' : 'post';
+    try {
+      await apiClient[method](`/books/${bookId}/track`, { status });
       trackedIds[bookId] = status;
       await loadShelf();
       // Close dropdown
       document.querySelectorAll('.shelf-dropdown.open').forEach(d => d.classList.remove('open'));
+    } catch (err) {
+      // apiClient already surfaced a toast for the error.
     }
   };
 
   window.untrack = async (bookId) => {
     if (!confirm('Remove this book from your shelf?')) return;
-    const res = await fetch(`${API}/books/${bookId}/track`, { method: 'DELETE', headers: hdrs });
-    if (res.ok) {
+    try {
+      await apiClient.delete(`/books/${bookId}/track`);
       delete trackedIds[bookId];
       await loadShelf();
+    } catch (err) {
+      // apiClient already surfaced a toast for the error.
     }
   };
 

@@ -15,10 +15,10 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/pages.css">
   <script src="js/config.js"></script>
-  <script src="js/apiClient.js"></script>
-  <script src="js/utils/navigation.js"></script>
-  <script src="js/utils/scroll.js"></script>
-  <script src="js/components/bookCard.js"></script>
+  <script src="js/apiClient.js" defer></script>
+  <script src="js/utils/navigation.js" defer></script>
+  <script src="js/utils/scroll.js" defer></script>
+  <script src="js/components/bookCard.js" defer></script>
 
   <style>
     body {
@@ -285,10 +285,10 @@
     let activeTab = 'login';
     const API_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'http://localhost/api/public/api';
 
-    // Auto-redirect if already logged in
+    // Auto-redirect if already logged in (uses 'user' key, consistent with login flow)
     (function checkAlreadyLoggedIn() {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
+      const user = localStorage.getItem('user');
+      if (user) {
         const urlParams = new URLSearchParams(window.location.search);
         const redirectPath = urlParams.get('redirect') || 'index.html';
         window.location.href = redirectPath;
@@ -355,7 +355,10 @@
         await apiClient.ensureCsrfToken();
         const data = await apiClient.post(endpoint, body);
 
-        // Save user data to LocalStorage (session cookie handles authentication)
+        // Save auth token and user data to LocalStorage
+        if (data.access_token) {
+          localStorage.setItem('auth_token', data.access_token);
+        }
         localStorage.setItem('user', JSON.stringify(data.user));
 
         // Get redirect parameter or default to homepage

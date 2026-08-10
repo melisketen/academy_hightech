@@ -14,10 +14,10 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/pages.css">
   <script src="js/config.js"></script>
-  <script src="js/apiClient.js"></script>
-  <script src="js/utils/navigation.js"></script>
-  <script src="js/utils/scroll.js"></script>
-  <script src="js/components/bookCard.js"></script>
+  <script src="js/apiClient.js" defer></script>
+  <script src="js/utils/navigation.js" defer></script>
+  <script src="js/utils/scroll.js" defer></script>
+  <script src="js/components/bookCard.js" defer></script>
   <script src="js/app.js" defer></script>  <style>
     body {
       background: var(--paper);
@@ -577,14 +577,9 @@
 </div>
 
 <script>
-const API = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'http://127.0.0.1:8000/api';
-
 document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('auth_token');
   if (!token) { window.location.href = 'auth.html?redirect=profile.html'; return; }
-
-  window._token = token;
-  window._hdrs = { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' };
 
   /* ─ Sidebar navigation ─ */
   document.querySelectorAll('.settings-nav-item').forEach(item => {
@@ -608,10 +603,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2 MB.'); return; }
     const reader = new FileReader();
     reader.onloadend = async () => {
-      await patchProfile({ avatar: reader.result });
-      document.getElementById('avatar-img').src = reader.result;
-      document.getElementById('avatar-img').style.display = 'block';
-      document.getElementById('avatar-placeholder').style.display = 'none';
+      try {
+        await patchProfile({ avatar: reader.result });
+        document.getElementById('avatar-img').src = reader.result;
+        document.getElementById('avatar-img').style.display = 'block';
+        document.getElementById('avatar-placeholder').style.display = 'none';
+      } catch (err) {
+        // apiClient already surfaced a toast for the error.
+      }
     };
     reader.readAsDataURL(file);
   });
@@ -619,27 +618,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* ─ Personal form ─ */
   document.getElementById('form-personal').addEventListener('submit', async e => {
     e.preventDefault();
-    const res = await patchProfile({
-      first_name: document.getElementById('first_name').value.trim(),
-      last_name:  document.getElementById('last_name').value.trim(),
-      username:   document.getElementById('username').value.trim(),
-      bio:        document.getElementById('bio').value.trim(),
-    });
-    showAlert('alert-personal', res.ok ? 'success' : 'error',
-      res.ok ? 'Profile updated!' : 'Failed to save — check inputs.');
-    if (res.ok) {
-      const data = await res.json();
+    try {
+      const data = await patchProfile({
+        first_name: document.getElementById('first_name').value.trim(),
+        last_name:  document.getElementById('last_name').value.trim(),
+        username:   document.getElementById('username').value.trim(),
+        bio:        document.getElementById('bio').value.trim(),
+      });
+      showAlert('alert-personal', 'success', 'Profile updated!');
       localStorage.setItem('user', JSON.stringify(data.user));
       updateSidebar(data.user);
+    } catch (err) {
+      showAlert('alert-personal', 'error', err.message || 'Failed to save — check inputs.');
     }
   });
 });
 
 /* ──────────── Load Profile ──────────── */
 async function loadProfile() {
-  const res = await fetch(`${API}/user/profile`, { headers: window._hdrs });
-  if (!res.ok) return;
-  const { user } = await res.json();
+  let user;
+  try {
+    ({ user } = await apiClient.get('/user/profile'));
+  } catch (err) {
+    return;
+  }
   const info = user.profile_info || {};
 
   document.getElementById('first_name').value = info.first_name || info.name || '';
@@ -683,9 +685,7 @@ async function loadProfile() {
 
 async function loadBillingData() {
   try {
-    const res = await fetch(`${API}/user/payments`, { headers: window._hdrs });
-    if (!res.ok) return;
-    const payments = await res.json();
+    const payments = await apiClient.get('/user/payments');
 
     // Show payment methods section
     const cardsContainer = document.getElementById('saved-cards-list');
@@ -730,16 +730,10 @@ async function loadBillingData() {
 }
 
 window.cancelSubscriptionFromProfile = async function() {
-  const token = localStorage.getItem('auth_token');
   if (!confirm('Are you sure you want to cancel your subscription? You will be moved to the Free plan immediately.')) return;
 
   try {
-    const res = await fetch(`${API}/subscriptions/cancel`, {
-      method: 'DELETE',
-      headers: window._hdrs
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Cancellation failed.');
+    const data = await apiClient.delete('/subscriptions/cancel');
 
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     user.subscription_status = 'free';
@@ -748,7 +742,7 @@ window.cancelSubscriptionFromProfile = async function() {
     alert(data.message || 'Your subscription has been cancelled.');
     window.location.reload();
   } catch (err) {
-    alert('Error: ' + err.message);
+    // apiClient already surfaced a toast for the error.
   }
 };
 
@@ -771,9 +765,12 @@ function updateSidebar(user) {
 
 /* ──────────── Sessions ──────────── */
 async function loadSessions() {
-  const res = await fetch(`${API}/user/sessions`, { headers: window._hdrs });
-  if (!res.ok) return;
-  const sessions = await res.json();
+  let sessions;
+  try {
+    sessions = await apiClient.get('/user/sessions');
+  } catch (err) {
+    return;
+  }
   const container = document.getElementById('sessions-list');
   container.innerHTML = '';
   sessions.forEach(s => {
@@ -792,15 +789,23 @@ async function loadSessions() {
 
 window.logoutAllDevices = async () => {
   if (!confirm('Sign out from all other devices?')) return;
-  const res = await fetch(`${API}/user/sessions`, { method: 'DELETE', headers: window._hdrs });
-  if (res.ok) { await loadSessions(); alert('Done! All other sessions revoked.'); }
+  try {
+    await apiClient.delete('/user/sessions');
+    await loadSessions();
+    alert('Done! All other sessions revoked.');
+  } catch (err) {
+    // apiClient already surfaced a toast for the error.
+  }
 };
 
 /* ──────────── Invoices ──────────── */
 async function loadInvoices() {
-  const res = await fetch(`${API}/user/payments`, { headers: window._hdrs });
-  if (!res.ok) return;
-  const payments = await res.json();
+  let payments;
+  try {
+    payments = await apiClient.get('/user/payments');
+  } catch (err) {
+    return;
+  }
   const container = document.getElementById('billing-invoices');
   if (!payments.length) { container.innerHTML = '<p style="color:var(--slate)">No invoices yet.</p>'; return; }
   container.innerHTML = payments.slice(0,3).map(p => `
@@ -813,15 +818,17 @@ async function loadInvoices() {
 
 /* ──────────── Generic patch helper ──────────── */
 async function patchProfile(payload) {
-  return fetch(`${API}/user/profile`, {
-    method: 'PUT', headers: window._hdrs, body: JSON.stringify(payload)
-  });
+  return apiClient.put('/user/profile', payload);
 }
 
 /* ──────────── Save helpers ──────────── */
 window.saveEmail = async () => {
-  const res = await patchProfile({ email: document.getElementById('email').value.trim() });
-  showAlert('alert-email', res.ok ? 'success' : 'error', res.ok ? 'Email updated!' : 'Failed to update email.');
+  try {
+    await patchProfile({ email: document.getElementById('email').value.trim() });
+    showAlert('alert-email', 'success', 'Email updated!');
+  } catch (err) {
+    showAlert('alert-email', 'error', err.message || 'Failed to update email.');
+  }
 };
 
 window.savePassword = async () => {
@@ -829,36 +836,48 @@ window.savePassword = async () => {
   const pw2 = document.getElementById('pw-confirm').value;
   if (pw !== pw2) { showAlert('alert-pw','error','Passwords do not match.'); return; }
   if (pw.length < 6) { showAlert('alert-pw','error','Minimum 6 characters required.'); return; }
-  const res = await patchProfile({ password: pw });
-  showAlert('alert-pw', res.ok ? 'success' : 'error', res.ok ? 'Password changed!' : 'Failed to change password.');
-  if (res.ok) { document.getElementById('pw-new').value = ''; document.getElementById('pw-confirm').value = ''; }
+  try {
+    await patchProfile({ password: pw });
+    showAlert('alert-pw', 'success', 'Password changed!');
+    document.getElementById('pw-new').value = '';
+    document.getElementById('pw-confirm').value = '';
+  } catch (err) {
+    showAlert('alert-pw', 'error', err.message || 'Failed to change password.');
+  }
 };
 
 window.save2FA = async (type, enabled) => {
-  await patchProfile({ twofa_enabled: enabled ? type : null });
+  try { await patchProfile({ twofa_enabled: enabled ? type : null }); } catch (err) {}
 };
 
 window.saveNotif = async (key, value) => {
-  await patchProfile({ [key]: value });
+  try { await patchProfile({ [key]: value }); } catch (err) {}
 };
 
 window.saveField = async (key, value) => {
-  await patchProfile({ [key]: value });
+  try { await patchProfile({ [key]: value }); } catch (err) {}
 };
 
 window.savePrefs = async () => {
-  const res = await patchProfile({
-    language: document.getElementById('pref-language').value,
-    timezone: document.getElementById('pref-timezone').value,
-  });
-  if (res.ok) showTempAlert('Preferences saved!');
+  try {
+    await patchProfile({
+      language: document.getElementById('pref-language').value,
+      timezone: document.getElementById('pref-timezone').value,
+    });
+    showTempAlert('Preferences saved!');
+  } catch (err) {
+    // apiClient already surfaced a toast for the error.
+  }
 };
 
 /* ──────────── Data export ──────────── */
 window.exportData = async () => {
-  const res = await fetch(`${API}/user/export`, { headers: window._hdrs });
-  if (!res.ok) { alert('Export failed.'); return; }
-  const data = await res.json();
+  let data;
+  try {
+    data = await apiClient.get('/user/export');
+  } catch (err) {
+    return;
+  }
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -910,20 +929,17 @@ document.getElementById('modal-confirm-btn').addEventListener('click', async () 
   const pw = document.getElementById('modal-password').value;
   if (!pw) { showAlert('modal-alert','error','Please enter your password.'); return; }
 
-  const endpoint = _dangerAction === 'delete' ? `${API}/user/account` : `${API}/user/deactivate`;
-  const method   = _dangerAction === 'delete' ? 'DELETE' : 'POST';
-
-  const res = await fetch(endpoint, {
-    method, headers: window._hdrs, body: JSON.stringify({ password: pw })
-  });
-
-  if (res.ok) {
+  try {
+    if (_dangerAction === 'delete') {
+      await apiClient.request('/user/account', { method: 'DELETE', body: { password: pw } });
+    } else {
+      await apiClient.post('/user/deactivate', { password: pw });
+    }
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
     alert(_dangerAction === 'delete' ? 'Your account has been deleted.' : 'Account deactivated. Goodbye!');
     window.location.href = 'index.html';
-  } else {
-    const err = await res.json();
+  } catch (err) {
     showAlert('modal-alert','error', err.message || 'Incorrect password.');
   }
 });

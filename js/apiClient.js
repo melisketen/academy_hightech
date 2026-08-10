@@ -143,12 +143,21 @@
       headers['Accept'] = 'application/json';
     }
 
+    // Attach the Sanctum personal access token issued at login/register, if present.
+    // This is the app's primary auth mechanism (see AuthController::login/register).
+    const authToken = localStorage.getItem('auth_token');
+    if (authToken && !headers['Authorization'] && !headers['authorization']) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
     // Always include credentials (HttpOnly cookies)
     options.credentials = 'include';
 
-    // For stateful mutating requests, ensure we have a valid XSRF-TOKEN cookie
+    // A request carrying a Bearer token is not CSRF-vulnerable (see
+    // BearerExemptCsrf on the backend), so skip the CSRF handshake for it.
+    // Only cookie/session-authenticated requests need the XSRF-TOKEN dance.
     const method = (options.method || 'GET').toUpperCase();
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    if (!authToken && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       let xsrfToken = getCookie('XSRF-TOKEN');
       if (!xsrfToken) {
         await ensureCsrfToken();
@@ -172,6 +181,7 @@
     // Handle 401 Unauthorized
     if (response.status === 401) {
       localStorage.removeItem('user');
+      localStorage.removeItem('auth_token');
       showToast('Oturum süresi doldu. Giriş sayfasına yönlendiriliyorsunuz.', 'error');
       
       const isSubdirectory = window.location.pathname.includes('/books/') || window.location.pathname.includes('/series/');
@@ -225,9 +235,37 @@
     return data;
   }
 
+  /**
+   * Executes a request and returns the raw, unparsed Response — for binary
+   * payloads (e.g. streamed PDFs) where `request()`'s JSON/text parsing
+   * would corrupt the body, or when the caller needs to branch on specific
+   * status codes itself. Still resolves the base URL and attaches the
+   * Bearer token like every other apiClient call.
+   * @param {string} endpoint - API endpoint path
+   * @param {RequestOptions} [options={}] - Fetch configuration options
+   * @returns {Promise<Response>}
+   */
+  async function fetchRaw(endpoint, options = {}) {
+    const baseUrl = getApiBaseUrl();
+    const url = endpoint.startsWith('http://') || endpoint.startsWith('https://')
+      ? endpoint
+      : `${baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+
+    const headers = options.headers || {};
+    const authToken = localStorage.getItem('auth_token');
+    if (authToken && !headers['Authorization'] && !headers['authorization']) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    options.headers = headers;
+    options.credentials = options.credentials || 'include';
+
+    return fetch(url, options);
+  }
+
   /** @type {ApiClient} */
   window.apiClient = {
     request,
+    fetchRaw,
     get: (endpoint, options = {}) => request(endpoint, { ...options, method: 'GET' }),
     post: (endpoint, body, options = {}) => request(endpoint, { ...options, method: 'POST', body }),
     put: (endpoint, body, options = {}) => request(endpoint, { ...options, method: 'PUT', body }),

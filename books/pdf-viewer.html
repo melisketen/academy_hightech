@@ -12,10 +12,10 @@
   <link rel="stylesheet" href="../css/variables.css">
   <link rel="stylesheet" href="../css/main.css">
   <script src="../js/config.js"></script>
-  <script src="../js/apiClient.js"></script>
-  <script src="../js/utils/navigation.js"></script>
-  <script src="../js/utils/scroll.js"></script>
-  <script src="../js/components/bookCard.js"></script>
+  <script src="../js/apiClient.js" defer></script>
+  <script src="../js/utils/navigation.js" defer></script>
+  <script src="../js/utils/scroll.js" defer></script>
+  <script src="../js/components/bookCard.js" defer></script>
   
   <!-- PDF.js library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -229,7 +229,6 @@
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
   document.addEventListener('DOMContentLoaded', async () => {
-    const API = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'http://127.0.0.1:8000/api';
     const token = localStorage.getItem('auth_token');
     const userJson = localStorage.getItem('user');
     const user = userJson ? JSON.parse(userJson) : null;
@@ -268,11 +267,7 @@
 
     // Fetch PDF Stream as ArrayBuffer
     try {
-      const response = await fetch(`${API}/books/${bookId}/stream`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await apiClient.fetchRaw(`/books/${bookId}/stream`);
 
       if (response.status === 403) {
         alert('Access Denied. You need an active subscription (Standard or Premium) to read this book.');
@@ -306,18 +301,10 @@
     // Fetch any saved progress
     async function fetchInitialProgress() {
       try {
-        const res = await fetch(`${API}/books/my-reads`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const record = data.data.find(r => r.book_id == bookId);
-          if (record) {
-            pageNum = record.last_read_page || 1;
-          }
+        const data = await apiClient.get('/books/my-reads');
+        const record = data.data.find(r => r.book_id == bookId);
+        if (record) {
+          pageNum = record.last_read_page || 1;
         }
       } catch (err) {
         console.error('Error fetching progress:', err);

@@ -16,10 +16,10 @@
   <link rel="stylesheet" href="css/pages.css">
   
   <script src="js/config.js"></script>
-  <script src="js/apiClient.js"></script>
-  <script src="js/utils/navigation.js"></script>
-  <script src="js/utils/scroll.js"></script>
-  <script src="js/components/bookCard.js"></script>
+  <script src="js/apiClient.js" defer></script>
+  <script src="js/utils/navigation.js" defer></script>
+  <script src="js/utils/scroll.js" defer></script>
+  <script src="js/components/bookCard.js" defer></script>
   <script src="js/app.js" defer></script>
   <style>
     body {
@@ -341,18 +341,11 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', async () => {
-    const API = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'http://localhost/api/public/api';
     const token = localStorage.getItem('auth_token');
     if (!token) {
       window.location.href = 'auth.html?redirect=subscription.html';
       return;
     }
-
-    const apiHeaders = {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    };
 
     // Load initial user details
     const user = JSON.parse(localStorage.getItem('user'));
@@ -394,10 +387,8 @@
 
     async function loadPaymentHistory() {
       try {
-        const res = await fetch(`${API}/user/payments`, { headers: apiHeaders });
-        if (!res.ok) return;
-        const data = await res.json();
-        
+        const data = await apiClient.get('/user/payments');
+
         const tbody = document.getElementById('invoice-tbody');
         tbody.innerHTML = '';
         
@@ -430,18 +421,11 @@
       document.getElementById('checkout-amount').textContent = '$' + price;
       
       try {
-        const response = await fetch(`${API}/subscriptions/subscribe`, {
-          method: 'POST',
-          headers: apiHeaders,
-          body: JSON.stringify({
-            subscription_id: subId,
-            gateway: 'stripe'
-          })
+        const data = await apiClient.post('/subscriptions/subscribe', {
+          subscription_id: subId,
+          gateway: 'stripe'
         });
 
-        if (!response.ok) throw new Error('Failed to initiate checkout.');
-        const data = await response.json();
-        
         activeCheckoutSession = data.checkout;
         
         // Show modal
@@ -464,29 +448,17 @@
       successBtn.disabled = true;
 
       try {
-        // Fire direct simulated webhook back to API
-        const webhookResponse = await fetch(`${API}/webhooks/payment`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            gateway: activeCheckoutSession.gateway,
-            transaction_id: activeCheckoutSession.transaction_id,
-            status: 'success',
-            subscription_name: activeCheckoutSession.subscription_name
-          })
+        // Fire direct simulated webhook back to API (public endpoint, no auth needed)
+        await apiClient.post('/webhooks/payment', {
+          gateway: activeCheckoutSession.gateway,
+          transaction_id: activeCheckoutSession.transaction_id,
+          status: 'success',
+          subscription_name: activeCheckoutSession.subscription_name
         });
 
-        if (!webhookResponse.ok) throw new Error('Webhook processing failed.');
-
         // Refresh user profile details to localstorage
-        const profileRes = await fetch(`${API}/user/profile`, { headers: apiHeaders });
-        if (profileRes.ok) {
-          const profileData = await profileRes.json();
-          localStorage.setItem('user', JSON.stringify(profileData.user));
-        }
+        const profileData = await apiClient.get('/user/profile');
+        localStorage.setItem('user', JSON.stringify(profileData.user));
 
         alert('Payment processed successfully! Your subscription has been updated.');
         window.location.reload();
@@ -500,24 +472,13 @@
 
   // ── Cancel Subscription ───────────────────────────────────────────────────
   window.cancelSubscription = async function() {
-    const token = localStorage.getItem('auth_token');
     if (!confirm('Are you sure you want to cancel your subscription? You will be moved to the Free plan immediately.')) return;
 
     const btn = document.getElementById('btn-cancel-sub');
     if (btn) { btn.disabled = true; btn.textContent = 'Cancelling…'; }
 
     try {
-      const res = await fetch(`${window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'http://localhost/api/public/api'}/subscriptions/cancel`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || 'Cancellation failed.');
+      const data = await apiClient.delete('/subscriptions/cancel');
 
       // Update local user object
       const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -534,7 +495,6 @@
 
   // ── Save Allowed Series ───────────────────────────────────────────────────
   window.saveAllowedSeries = async function() {
-    const token = localStorage.getItem('auth_token');
     const seriesId = document.getElementById('series-select').value;
     const btn = document.getElementById('btn-save-series');
     const msg = document.getElementById('series-save-msg');
@@ -543,18 +503,7 @@
     if (msg) msg.textContent = '';
 
     try {
-      const res = await fetch(`${window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'http://localhost/api/public/api'}/user/profile`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ allowed_series: seriesId })
-      });
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || 'Save failed.');
+      await apiClient.patch('/user/profile', { allowed_series: seriesId });
 
       // Update local user object
       const user = JSON.parse(localStorage.getItem('user') || '{}');

@@ -72,19 +72,31 @@ class BookController extends Controller
         // already holds the last-synced values, so an outage should degrade
         // gracefully instead of 500ing the reading list.
         try {
-            $reads->getCollection()->transform(function ($item) use ($user) {
-                $cachedPage = Redis::get("user:{$user->id}:book:{$item->book_id}:page");
-                $cachedPercentage = Redis::get("user:{$user->id}:book:{$item->book_id}:percentage");
+            $collection = $reads->getCollection();
 
-                if ($cachedPage !== null) {
-                    $item->last_read_page = (int) $cachedPage;
-                }
-                if ($cachedPercentage !== null) {
-                    $item->progress_percentage = (float) $cachedPercentage;
-                }
+            // Batch all page/percentage lookups into a single MGET instead of
+            // two Redis round-trips per row (was up to 30 round-trips for a
+            // 15-item page).
+            $keys = [];
+            foreach ($collection as $item) {
+                $keys[] = "user:{$user->id}:book:{$item->book_id}:page";
+                $keys[] = "user:{$user->id}:book:{$item->book_id}:percentage";
+            }
 
-                return $item;
-            });
+            if (! empty($keys)) {
+                $values = Redis::mget($keys);
+                $collection->values()->each(function ($item, $index) use ($values) {
+                    $cachedPage = $values[$index * 2] ?? null;
+                    $cachedPercentage = $values[$index * 2 + 1] ?? null;
+
+                    if ($cachedPage !== null && $cachedPage !== false) {
+                        $item->last_read_page = (int) $cachedPage;
+                    }
+                    if ($cachedPercentage !== null && $cachedPercentage !== false) {
+                        $item->progress_percentage = (float) $cachedPercentage;
+                    }
+                });
+            }
         } catch (\Throwable $e) {
             Log::warning('BookController::myReads: Redis unavailable, serving DB-only progress values.', [
                 'error' => $e->getMessage(),
@@ -323,21 +335,20 @@ class BookController extends Controller
         $user = $request->user();
 
         // Find most read category
-        $latestRead = ReadingProgress::where('user_id', $user->id)
+        $latestRead = ReadingProgress::with('book')
+            ->where('user_id', $user->id)
             ->orderBy('updated_at', 'desc')
             ->first();
 
+        // Computed once and reused below instead of being re-queried.
+        $readBookIds = ReadingProgress::where('user_id', $user->id)->pluck('book_id')->toArray();
+
         $query = Book::query();
 
-        if ($latestRead) {
-            $book = Book::find($latestRead->book_id);
-            if ($book) {
-                // Prioritize the same category but exclude already read books
-                $readBookIds = ReadingProgress::where('user_id', $user->id)->pluck('book_id')->toArray();
-
-                $query->where('category_id', $book->category_id)
-                    ->whereNotIn('id', $readBookIds);
-            }
+        if ($latestRead && $latestRead->book) {
+            // Prioritize the same category but exclude already read books
+            $query->where('category_id', $latestRead->book->category_id)
+                ->whereNotIn('id', $readBookIds);
         }
 
         // Get 4 suggestions
@@ -345,11 +356,7 @@ class BookController extends Controller
 
         // If not enough suggestions, fill with other popular books
         if ($suggestions->count() < 4) {
-            $excludeIds = $suggestions->pluck('id')->toArray();
-            if ($latestRead) {
-                $readBookIds = ReadingProgress::where('user_id', $user->id)->pluck('book_id')->toArray();
-                $excludeIds = array_merge($excludeIds, $readBookIds);
-            }
+            $excludeIds = array_merge($suggestions->pluck('id')->toArray(), $readBookIds);
 
             $extra = Book::whereNotIn('id', $excludeIds)
                 ->orderBy('popularity_score', 'desc')
