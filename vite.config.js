@@ -19,7 +19,6 @@ export default defineConfig({
         developerSeries: resolve(__dirname, 'series/developer.html'),
         academicSeries: resolve(__dirname, 'series/academic.html'),
         aiDataSeries: resolve(__dirname, 'series/ai-data.html'),
-        seriesDashboard: resolve(__dirname, 'series/dashboard.html'),
       },
     },
   },
